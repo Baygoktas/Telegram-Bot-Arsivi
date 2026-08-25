@@ -7,7 +7,10 @@ const LOCK_SECONDS = 50;
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
 
-  // Cron güvenliği
+  // ==================================================
+  // CRON GÜVENLİĞİ
+  // ==================================================
+
   const cronSecret = env.CRON_SECRET;
 
   if (cronSecret) {
@@ -27,9 +30,10 @@ export async function onRequestGet({ request, env }) {
   const lockUntil = now + LOCK_SECONDS;
 
   try {
-    // --------------------------------------------------
-    // 1. Import state tablosunu hazırla
-    // --------------------------------------------------
+
+    // ==================================================
+    // 1. IMPORT STATE
+    // ==================================================
 
     await env.DB.prepare(`
       CREATE TABLE IF NOT EXISTS bot_import_state (
@@ -44,264 +48,502 @@ export async function onRequestGet({ request, env }) {
 
     await env.DB.prepare(`
       INSERT OR IGNORE INTO bot_import_state
-      (id, source, current_offset, total_imported, locked_until)
-      VALUES (1, 'tgadsspy', 0, 0, 0)
+      (
+        id,
+        source,
+        current_offset,
+        total_imported,
+        locked_until
+      )
+      VALUES (
+        1,
+        'tgadsspy',
+        0,
+        0,
+        0
+      )
     `).run();
 
-    // --------------------------------------------------
-    // 2. Çakışan cron çalışmasını engelle
-    // --------------------------------------------------
+
+    // ==================================================
+    // 2. CRON ÇAKIŞMA KİLİDİ
+    // ==================================================
 
     const lockResult = await env.DB.prepare(`
       UPDATE bot_import_state
       SET locked_until = ?
       WHERE id = 1
-        AND (locked_until IS NULL OR locked_until < ?)
+        AND (
+          locked_until IS NULL
+          OR locked_until < ?
+        )
     `)
       .bind(lockUntil, now)
       .run();
 
     if (!lockResult.meta?.changes) {
+
       return json({
         durum: "Atlandı",
-        mesaj: "Önceki import işlemi hâlâ çalışıyor."
+        mesaj: "Önceki import hâlâ çalışıyor."
       });
     }
 
-    // --------------------------------------------------
-    // 3. Cursor oku
-    // --------------------------------------------------
+
+    // ==================================================
+    // 3. CURSOR OKU
+    // ==================================================
 
     const state = await env.DB.prepare(`
-      SELECT current_offset, total_imported
+      SELECT
+        current_offset,
+        total_imported
       FROM bot_import_state
       WHERE id = 1
     `).first();
 
-    let offset = Number(state?.current_offset || 0);
-    let totalImported = Number(state?.total_imported || 0);
+    let offset =
+      Number(state?.current_offset || 0);
 
-    // --------------------------------------------------
-    // 4. Kaynaktan 50 bot getir
-    // --------------------------------------------------
+    let totalImported =
+      Number(state?.total_imported || 0);
 
-    const apiUrl =
-      `${SOURCE_URL}?sort=mau&limit=${SOURCE_PAGE_SIZE}&offset=${offset}`;
 
-    const response = await fetch(apiUrl, {
-      headers: {
-        "Accept": "application/json",
-        "User-Agent": "BotArsivi/1.0"
-      }
-    });
+    // ==================================================
+    // 4. 30 YENİ BOT BULANA KADAR SAYFALARI TARA
+    // ==================================================
 
-    if (!response.ok) {
-      const retryAfter = response.headers.get("Retry-After");
-      const errorText = await response.text();
+    const selectedBots = [];
 
-      await unlock(env);
+    // Aynı cron çalışmasında aynı username
+    // ikinci kez seçilmesin.
+    const runSeen = new Set();
 
-      return json({
-        durum: "Kaynak Hatası",
-        status: response.status,
-        retry_after: retryAfter,
-        detay: errorText.slice(0, 500),
-        offset
-      }, response.status);
-    }
+    let pagesFetched = 0;
+    let sourceRecordsScanned = 0;
 
-    const payload = await response.json();
+    let lastConsumedOffset = offset;
 
-    const sourceBots = Array.isArray(payload?.data)
-      ? payload.data
-      : [];
+    let sourceTotal = null;
 
-    if (!sourceBots.length) {
-      await unlock(env);
+    while (
+      selectedBots.length < MAX_NEW_BOTS
+    ) {
 
-      return json({
-        durum: "Tamamlandı",
-        mesaj: "Kaynakta bu offsetten sonra bot kalmadı.",
-        offset,
-        toplam_import: totalImported
-      });
-    }
+      // ----------------------------------------------
+      // Kaynak API
+      // ----------------------------------------------
 
-    // --------------------------------------------------
-    // 5. Username'leri normalize et
-    // --------------------------------------------------
+      const apiUrl =
+        `${SOURCE_URL}` +
+        `?sort=mau` +
+        `&limit=${SOURCE_PAGE_SIZE}` +
+        `&offset=${offset}`;
 
-    const normalizedBots = sourceBots
-      .map((bot, index) => ({
-        ...bot,
-        _index: index,
-        _username: normalizeUsername(bot?.username)
-      }))
-      .filter(bot => bot._username);
+      const response = await fetch(
+        apiUrl,
+        {
+          headers: {
+            "Accept": "application/json",
+            "User-Agent": "BotArsivi/1.0"
+          }
+        }
+      );
 
-    // --------------------------------------------------
-    // 6. D1'de mevcut botları TEK sorguda bul
-    // --------------------------------------------------
 
-    const usernames = normalizedBots.map(bot => bot._username);
+      // ----------------------------------------------
+      // Rate limit
+      // ----------------------------------------------
 
-    const placeholders = usernames
-      .map(() => "?")
-      .join(",");
+      if (response.status === 429) {
 
-    let existingRows = [];
+        const retryAfter =
+          response.headers.get("Retry-After");
 
-    if (usernames.length) {
-      const result = await env.DB.prepare(`
-        SELECT username
-        FROM bots
-        WHERE username IN (${placeholders})
-      `)
-        .bind(...usernames)
-        .all();
+        await unlock(env);
 
-      existingRows = result.results || [];
-    }
-
-    const existingSet = new Set(
-      existingRows.map(row =>
-        normalizeUsername(row.username)
-      )
-    );
-
-    // --------------------------------------------------
-    // 7. İlk 30 YENİ botu seç
-    // --------------------------------------------------
-
-    const newCandidates = [];
-
-    for (const bot of normalizedBots) {
-
-      if (existingSet.has(bot._username)) {
-        continue;
+        return json({
+          durum: "Rate Limit",
+          mesaj:
+            "Kaynak API rate limit uyguladı.",
+          retry_after:
+            retryAfter,
+          offset
+        }, 429);
       }
 
-      newCandidates.push(bot);
 
-      if (newCandidates.length >= MAX_NEW_BOTS) {
+      // ----------------------------------------------
+      // Diğer API hataları
+      // ----------------------------------------------
+
+      if (!response.ok) {
+
+        const errorText =
+          await response.text();
+
+        await unlock(env);
+
+        return json({
+          durum: "Kaynak Hatası",
+          status: response.status,
+          detay:
+            errorText.slice(0, 500),
+          offset
+        }, response.status);
+      }
+
+
+      const payload =
+        await response.json();
+
+      const sourceBots =
+        Array.isArray(payload?.data)
+          ? payload.data
+          : [];
+
+      sourceTotal =
+        Number(payload?.meta?.total || 0);
+
+      pagesFetched++;
+
+
+      // ----------------------------------------------
+      // Kaynak bitti
+      // ----------------------------------------------
+
+      if (!sourceBots.length) {
+        break;
+      }
+
+
+      // ----------------------------------------------
+      // Bu sayfadaki username'leri hazırla
+      // ----------------------------------------------
+
+      const pageBots = [];
+
+      for (
+        let i = 0;
+        i < sourceBots.length;
+        i++
+      ) {
+
+        const bot =
+          sourceBots[i];
+
+        const username =
+          normalizeUsername(
+            bot?.username
+          );
+
+        if (!username) {
+          continue;
+        }
+
+        pageBots.push({
+          ...bot,
+          _username: username,
+          _sourceIndex: i
+        });
+      }
+
+
+      // ----------------------------------------------
+      // D1'de mevcut username'leri TEK sorguda bul
+      // ----------------------------------------------
+
+      const pageUsernames =
+        [...new Set(
+          pageBots.map(
+            bot => bot._username
+          )
+        )];
+
+
+      const existingSet =
+        new Set();
+
+
+      if (pageUsernames.length) {
+
+        const placeholders =
+          pageUsernames
+            .map(() => "?")
+            .join(",");
+
+        const existing =
+          await env.DB.prepare(`
+            SELECT username
+            FROM bots
+            WHERE username IN (${placeholders})
+          `)
+          .bind(...pageUsernames)
+          .all();
+
+        for (
+          const row of (
+            existing.results || []
+          )
+        ) {
+
+          const username =
+            normalizeUsername(
+              row.username
+            );
+
+          if (username) {
+            existingSet.add(username);
+          }
+        }
+      }
+
+
+      // ----------------------------------------------
+      // Yeni botları seç
+      // ----------------------------------------------
+
+      for (const bot of pageBots) {
+
+        const username =
+          bot._username;
+
+
+        // D1'de zaten var
+        if (existingSet.has(username)) {
+          continue;
+        }
+
+
+        // Bu cron çalışmasında zaten seçildi
+        if (runSeen.has(username)) {
+          continue;
+        }
+
+
+        runSeen.add(username);
+
+        selectedBots.push({
+          ...bot
+        });
+
+
+        // 30'a ulaştık
+        if (
+          selectedBots.length >=
+          MAX_NEW_BOTS
+        ) {
+          break;
+        }
+      }
+
+
+      // ----------------------------------------------
+      // Sayfanın kaç kaydını tükettiğimizi hesapla
+      // ----------------------------------------------
+
+      sourceRecordsScanned +=
+        sourceBots.length;
+
+
+      // 30 bot bulunduysa:
+      //
+      // Son seçilen botun kaynak index'i + 1
+      //
+      // Böylece o sayfanın geri kalanına
+      // bir sonraki cron'da devam edilir.
+
+      if (
+        selectedBots.length >=
+        MAX_NEW_BOTS
+      ) {
+
+        const lastBot =
+          selectedBots[
+            selectedBots.length - 1
+          ];
+
+        offset =
+          offset +
+          lastBot._sourceIndex +
+          1;
+
+        lastConsumedOffset =
+          offset;
+
+        break;
+      }
+
+
+      // ----------------------------------------------
+      // Bu sayfanın tamamı tüketildi
+      // ----------------------------------------------
+
+      offset =
+        offset +
+        sourceBots.length;
+
+      lastConsumedOffset =
+        offset;
+
+
+      // Güvenlik:
+      // Kaynakta daha fazla kayıt yoksa çık.
+      if (
+        sourceTotal > 0 &&
+        offset >= sourceTotal
+      ) {
+        break;
+      }
+
+
+      // ANON offset limiti.
+      // API key kullanınca bu sınır yükselebilir.
+      if (offset >= 1000) {
         break;
       }
     }
 
-    // --------------------------------------------------
-    // 8. Cursor'u KESİNLİKLE işlenen son elemana taşı
-    // --------------------------------------------------
 
-    let consumedCount;
-
-    if (newCandidates.length >= MAX_NEW_BOTS) {
-      const lastCandidate =
-        newCandidates[newCandidates.length - 1];
-
-      consumedCount = lastCandidate._index + 1;
-    } else {
-      // 50 kaydın tamamını taradık
-      consumedCount = sourceBots.length;
-    }
-
-    const nextOffset = offset + consumedCount;
-
-    // --------------------------------------------------
-    // 9. Yeni botların detaylarını al
-    // --------------------------------------------------
+    // ==================================================
+    // 5. DETAYLARI AL
+    // ==================================================
 
     const preparedBots = [];
 
-    for (const bot of newCandidates) {
+    for (
+      const bot of selectedBots
+    ) {
 
       let detail = null;
 
       try {
-        const detailResponse = await fetch(
-          `https://tgadsspy.com/api/v1/miniapps/${encodeURIComponent(bot._username)}`,
-          {
-            headers: {
-              "Accept": "application/json",
-              "User-Agent": "BotArsivi/1.0"
+
+        const detailResponse =
+          await fetch(
+            `${SOURCE_URL}/${encodeURIComponent(
+              bot._username
+            )}`,
+            {
+              headers: {
+                "Accept":
+                  "application/json",
+                "User-Agent":
+                  "BotArsivi/1.0"
+              }
             }
-          }
-        );
+          );
+
 
         if (detailResponse.ok) {
+
           const detailPayload =
             await detailResponse.json();
 
-          detail = detailPayload?.data || null;
+          detail =
+            detailPayload?.data ||
+            null;
         }
 
       } catch (error) {
+
         console.log(
-          `Detay alınamadı: ${bot._username}`,
+          "Detay alınamadı:",
+          bot._username,
           error?.message
         );
       }
 
-      const name = cleanText(
-        detail?.title ||
-        bot?.title ||
-        bot._username
-      );
 
-      const description = cleanText(
-        detail?.description ||
-        `${name} Telegram botu.`
-      );
+      const name =
+        cleanText(
+          detail?.title ||
+          bot?.title ||
+          bot._username
+        );
 
-      const tags = buildTags(
-        detail?.botNiche ||
-        bot?.botNiche ||
-        ""
-      );
+
+      const description =
+        cleanText(
+          detail?.description ||
+          `${name} Telegram botu.`
+        );
+
+
+      const tags =
+        buildTags(
+          detail?.botNiche ||
+          bot?.botNiche ||
+          ""
+        );
+
 
       preparedBots.push({
-        username: bot._username,
+
+        username:
+          bot._username,
+
         name,
+
         description,
+
         tags,
+
         raw: {
-          source: "tgadsspy",
+
+          source:
+            "tgadsspy",
+
           avatar_url:
             detail?.avatarUrl ||
             bot?.avatarUrl ||
             null,
+
           niche:
             detail?.botNiche ||
             bot?.botNiche ||
             null,
+
           mau:
             detail?.botActiveUsers ||
             bot?.botActiveUsers ||
             null,
+
           stars:
             detail?.botStarsRatingStars ||
             null,
+
           stars_level:
             detail?.botStarsRatingLevel ||
             null,
+
           popular_rank:
             detail?.popularBotsRank ||
             null,
+
           sponsored:
             detail?.botSponsoredEnabled ||
-            false
+            false,
+
+          source_profile:
+            `https://tgadsspy.com/miniapps/${bot._username}`
         }
       });
     }
 
-    // --------------------------------------------------
-    // 10. D1'e BATCH INSERT
-    // --------------------------------------------------
 
-    const insertStatements = [];
+    // ==================================================
+    // 6. D1 BATCH INSERT
+    // ==================================================
 
-    for (const bot of preparedBots) {
+    const statements = [];
 
-      insertStatements.push(
+    for (
+      const bot of preparedBots
+    ) {
+
+      statements.push(
+
         env.DB.prepare(`
           INSERT INTO bots (
             username,
@@ -318,10 +560,23 @@ export async function onRequestGet({ request, env }) {
             updated_at
           )
           VALUES (
-            ?, ?, 0.0, 5.0, 0, ?, ?, 1, 1, ?, ?, CURRENT_TIMESTAMP
+            ?,
+            ?,
+            0.0,
+            5.0,
+            0,
+            ?,
+            ?,
+            1,
+            1,
+            ?,
+            ?,
+            CURRENT_TIMESTAMP
           )
-          ON CONFLICT(username) DO NOTHING
-        `).bind(
+          ON CONFLICT(username)
+          DO NOTHING
+        `)
+        .bind(
           bot.username,
           bot.name,
           bot.description,
@@ -332,71 +587,102 @@ export async function onRequestGet({ request, env }) {
       );
     }
 
-    if (insertStatements.length) {
-      await env.DB.batch(insertStatements);
+
+    if (statements.length) {
+
+      await env.DB.batch(
+        statements
+      );
     }
 
-    const actuallyInserted =
+
+    // ==================================================
+    // 7. GERÇEK TOPLAM
+    // ==================================================
+
+    totalImported +=
       preparedBots.length;
 
-    totalImported += actuallyInserted;
 
-    // --------------------------------------------------
-    // 11. Cursor + istatistik güncelle
-    // --------------------------------------------------
+    // ==================================================
+    // 8. CURSOR KAYDET
+    // ==================================================
 
     await env.DB.prepare(`
       UPDATE bot_import_state
       SET
         current_offset = ?,
         total_imported = ?,
-        last_run_at = CURRENT_TIMESTAMP,
+        last_run_at =
+          CURRENT_TIMESTAMP,
         locked_until = 0
       WHERE id = 1
     `)
-      .bind(
-        nextOffset,
-        totalImported
-      )
-      .run();
+    .bind(
+      lastConsumedOffset,
+      totalImported
+    )
+    .run();
 
-    // --------------------------------------------------
-    // 12. Sonuç
-    // --------------------------------------------------
+
+    // ==================================================
+    // 9. SONUÇ
+    // ==================================================
 
     return json({
-      durum: "Başarılı",
-      kaynak: "tgadsspy",
 
-      kaynak_offset: offset,
-      sonraki_offset: nextOffset,
+      durum:
+        "Başarılı",
 
-      kaynakta_getirilen:
-        sourceBots.length,
+      kaynak:
+        "tgadsspy",
 
-      taranan:
-        consumedCount,
+      baslangic_offset:
+        Number(
+          state?.current_offset || 0
+        ),
+
+      sonraki_offset:
+        lastConsumedOffset,
+
+      sayfa_sayisi:
+        pagesFetched,
+
+      taranan_kayit:
+        sourceRecordsScanned,
 
       yeni_eklenen:
-        actuallyInserted,
+        preparedBots.length,
+
+      hedef:
+        MAX_NEW_BOTS,
 
       toplam_import:
         totalImported,
 
-      kalan_tahmini:
-        payload?.meta?.total
+      kaynak_toplam:
+        sourceTotal,
+
+      tahmini_kalan:
+        sourceTotal
           ? Math.max(
               0,
-              Number(payload.meta.total) - nextOffset
+              sourceTotal -
+              lastConsumedOffset
             )
           : null,
 
       eklenenler:
-        preparedBots.map(bot => ({
-          username: bot.username,
-          name: bot.name
-        }))
+        preparedBots.map(
+          bot => ({
+            username:
+              bot.username,
+            name:
+              bot.name
+          })
+        )
     });
+
 
   } catch (error) {
 
@@ -405,11 +691,11 @@ export async function onRequestGet({ request, env }) {
       error
     );
 
-    // Hata olursa cursor ilerletme.
-    // Sadece lock'u bırak.
+
     try {
       await unlock(env);
     } catch {}
+
 
     return json({
       durum: "Hata",
@@ -422,10 +708,11 @@ export async function onRequestGet({ request, env }) {
 
 
 // ======================================================
-// LOCK
+// LOCK AÇ
 // ======================================================
 
 async function unlock(env) {
+
   await env.DB.prepare(`
     UPDATE bot_import_state
     SET locked_until = 0
@@ -435,7 +722,7 @@ async function unlock(env) {
 
 
 // ======================================================
-// USERNAME
+// USERNAME TEMİZLE
 // ======================================================
 
 function normalizeUsername(username) {
@@ -444,12 +731,16 @@ function normalizeUsername(username) {
     return null;
   }
 
-  const value = String(username)
-    .trim()
-    .replace(/^@/, "")
-    .toLowerCase();
+  const value =
+    String(username)
+      .trim()
+      .replace(/^@/, "")
+      .toLowerCase();
 
-  if (!/^[a-z0-9_]{3,32}$/.test(value)) {
+
+  if (
+    !/^[a-z0-9_]{3,32}$/.test(value)
+  ) {
     return null;
   }
 
@@ -458,7 +749,7 @@ function normalizeUsername(username) {
 
 
 // ======================================================
-// TEXT
+// METİN TEMİZLE
 // ======================================================
 
 function cleanText(value) {
@@ -475,7 +766,7 @@ function cleanText(value) {
 
 
 // ======================================================
-// TAGS
+// ETİKET
 // ======================================================
 
 function buildTags(niche) {
@@ -484,37 +775,74 @@ function buildTags(niche) {
     return "#telegram #bot";
   }
 
+
   const map = {
-    crypto: "#kripto",
-    gambling: "#kumar",
-    finance: "#finans",
-    games: "#oyun",
-    gaming: "#oyun",
-    trading: "#trading",
-    education: "#eğitim",
-    technology: "#teknoloji",
-    tech: "#teknoloji",
-    news: "#haber",
-    vpn: "#vpn",
-    music: "#müzik",
-    ai: "#yapayzeka",
-    artificial_intelligence: "#yapayzeka"
+
+    crypto:
+      "#kripto",
+
+    gambling:
+      "#kumar",
+
+    finance:
+      "#finans",
+
+    games:
+      "#oyun",
+
+    gaming:
+      "#oyun",
+
+    trading:
+      "#trading",
+
+    education:
+      "#eğitim",
+
+    technology:
+      "#teknoloji",
+
+    tech:
+      "#teknoloji",
+
+    news:
+      "#haber",
+
+    vpn:
+      "#vpn",
+
+    music:
+      "#müzik",
+
+    ai:
+      "#yapayzeka",
+
+    artificial_intelligence:
+      "#yapayzeka"
   };
+
 
   const key =
     String(niche)
       .trim()
       .toLowerCase();
 
-  return `${map[key] || "#" + key} #telegram #bot`;
+
+  return `${
+    map[key] ||
+    "#" + key
+  } #telegram #bot`;
 }
 
 
 // ======================================================
-// JSON RESPONSE
+// JSON
 // ======================================================
 
-function json(data, status = 200) {
+function json(
+  data,
+  status = 200
+) {
 
   return new Response(
     JSON.stringify(
@@ -524,12 +852,14 @@ function json(data, status = 200) {
     ),
     {
       status,
+
       headers: {
         "Content-Type":
           "application/json; charset=utf-8",
+
         "Cache-Control":
           "no-store"
       }
     }
   );
-        }
+}
