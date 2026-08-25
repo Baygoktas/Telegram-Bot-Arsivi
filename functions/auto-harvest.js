@@ -1,116 +1,366 @@
-export async function onRequestGet({ env }) {
-  // Kesinlikle uydurma olmayan, Telegram'ın en popüler gerçek bot havuzu (100+ botluk liste)
-  const masterRealBots = [
-    { u: "Notcoin_bot", n: "Notcoin", d: "The official Telegram viral clicker and token mining mini app.", t: "#game #crypto #mining" },
-    { u: "QuizBot", n: "Quiz Bot", d: "Create and share interactive multiple-choice quizzes with friends or groups.", t: "#game #quiz #education" },
-    { u: "FileConverterBot", n: "File Converter", d: "Convert audio, video, images, and documents into any format instantly.", t: "#tools #converter #files" },
-    { u: "Sticker", n: "Sticker Downloader", d: "Download Telegram sticker packs as images, PNGs, or GIFs.", t: "#sticker #tools #media" },
-    { u: "like", n: "Like Bot", d: "Add reaction buttons with emojis to your channel posts easily.", t: "#channel #admin #tools" },
-    { u: "vote", n: "Polls Bot", d: "Create advanced custom voting polls for groups and public channels.", t: "#polls #vote #group #channel" },
-    { u: "ControllerBot", n: "Controller Bot", d: "Manage your Telegram channels with scheduled posts, formatting, and buttons.", t: "#channel #admin #management" },
-    { u: "MissRose_bot", n: "Miss Rose", d: "The most popular advanced moderation and group management bot for Telegram.", t: "#group #moderation #security" },
-    { u: "Shieldy_bot", n: "Shieldy Anti-Spam", d: "Protects your group chats from spammers and bots with custom captcha verification.", t: "#security #antispam #group" },
-    { u: "chessbot", n: "Chess Bot", d: "Play live chess games against friends or AI bots directly inside Telegram.", t: "#game #chess #puzzle" },
-    { u: "Gamee", n: "GAMEE Prizes", d: "Play hundreds of addictive casual mini HTML5 games and compete on leaderboards.", t: "#game #arcade #fun" },
-    { u: "translatethisbot", n: "Translate Bot", d: "Translates messages into over 100 languages instantly inside group chats.", t: "#translate #languages #tools" },
-    { u: "temp_mail_bot", n: "Temp Mail", d: "Get disposable temporary email addresses to receive verification codes safely.", t: "#email #privacy #tools" },
-    { u: "qrcode_bot", n: "QR Code Generator", d: "Create custom QR codes for websites, text, and Wi-Fi networks quickly.", t: "#qr #generator #tools" },
-    { u: "pdf_bot", n: "PDF Bot", d: "Merge, split, compress, and convert PDF files directly in Telegram.", t: "#pdf #documents #tools" },
-    { u: "VKSaverBot", n: "VK Music Downloader", d: "Search and download music tracks from social networks easily.", t: "#music #downloader #audio" },
-    { u: "Spotify_to_MP3_Bot", n: "Spotify Downloader", d: "Download tracks and playlists from Spotify with metadata and covers.", t: "#spotify #music #downloader" },
-    { u: "Instagram_Saver_Bot", n: "Instagram Saver", d: "Save Instagram photos, stories, reels and IGTV videos in high quality.", t: "#instagram #reels #downloader" },
-    { u: "TikTok_Downloader_Bot", n: "TikTok Downloader", d: "Download TikTok videos without watermarks and in full HD resolution.", t: "#tiktok #video #downloader" },
-    { u: "Twittervid_bot", n: "Twitter Video Downloader", d: "Download videos and GIFs from Twitter (X) posts smoothly.", t: "#twitter #x #downloader" },
-    { u: "Youtubednbot", n: "YouTube Downloader", d: "Download YouTube videos up to 4K resolution or convert them to MP3 audio.", t: "#youtube #video #mp3 #downloader" },
-    { u: "CoinMarketCapBot", n: "CoinMarketCap", d: "Check live cryptocurrency prices, market caps, and global trading volume.", t: "#crypto #finans #bitcoin" },
-    { u: "weather_bot", n: "Weather Forecast", d: "Get accurate live weather updates and forecasts for any city worldwide.", t: "#weather #tools #utility" },
-    { u: "DictionaryBot", n: "English Dictionary", d: "Look up definitions, synonyms, and pronunciation of any English word.", t: "#dictionary #education #english" },
-    { u: "MemesBot", n: "Meme Generator", d: "Create hilarious memes and funny images using popular templates.", t: "#memes #fun #entertainment" }
-  ];
+const SOURCE_URL = "https://tgadsspy.com/api/v1/miniapps";
+const PAGE_SIZE = 50;
+const MAX_NEW_BOTS = 10;
 
-  // 1. Veritabanından kalınan offset değerini oku
-  let stateRes;
-  try {
-    stateRes = await env.DB.prepare("SELECT current_page FROM scraper_state WHERE id = 1").first();
-  } catch (e) {
-    await env.DB.prepare("CREATE TABLE IF NOT EXISTS scraper_state (id INTEGER PRIMARY KEY, current_page INTEGER)").run();
-    await env.DB.prepare("INSERT OR IGNORE INTO scraper_state (id, current_page) VALUES (1, 0)").run();
-    stateRes = { current_page: 0 };
-  }
+export async function onRequestGet({ request, env }) {
+    const url = new URL(request.url);
 
-  let offset = stateRes ? stateRes.current_page : 0;
-  if (offset >= masterRealBots.length) offset = 0;
+    // Cron endpoint güvenliği
+    const cronSecret = env.CRON_SECRET;
 
-  // 2. Her seferinde tam 8 adet bot al
-  const batchSize = 8;
-  const currentBatch = masterRealBots.slice(offset, offset + batchSize);
-  let savedBots = [];
+    if (cronSecret) {
+        const providedSecret =
+            url.searchParams.get("key") ||
+            request.headers.get("x-cron-secret");
 
-  for (const bot of currentBatch) {
-    // Açıklamaları Türkçeye kusursuz çevir
-    const trDesc = await translateToTurkish(bot.d);
-    const tags = translateTagsToTurkish(bot.t);
-
-    await env.DB.prepare(`
-      INSERT INTO bots (username, name, rating_score, rating_max, vote_count, description, tags, supports_inline, supports_groups, updated_at)
-      VALUES (?, ?, 0.0, 5.0, 0, ?, ?, 1, 1, CURRENT_TIMESTAMP)
-      ON CONFLICT(username) DO UPDATE SET
-        name = excluded.name,
-        description = excluded.description,
-        tags = excluded.tags,
-        updated_at = CURRENT_TIMESTAMP
-    `).bind(
-      bot.u.toLowerCase(),
-      bot.n.toUpperCase(),
-      trDesc,
-      tags
-    ).run();
-
-    savedBots.push(`@${bot.u}`);
-  }
-
-  // 3. Sayacı güncelle
-  const nextOffset = offset + batchSize >= masterRealBots.length ? 0 : offset + batchSize;
-  await env.DB.prepare("UPDATE scraper_state SET current_page = ? WHERE id = 1").bind(nextOffset).run();
-
-  return new Response(JSON.stringify({
-    durum: "Başarılı",
-    eklenen_bot_sayisi: savedBots.length,
-    yeni_offset: nextOffset,
-    eklenenler: savedBots
-  }, null, 2), {
-    headers: { "Content-Type": "application/json; charset=utf-8" }
-  });
-}
-
-async function translateToTurkish(text) {
-  if (!text) return "";
-  try {
-    const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=tr&dt=t&q=${encodeURIComponent(text)}`);
-    if (res.ok) {
-      const data = await res.json();
-      return data[0].map(item => item[0]).join('');
+        if (providedSecret !== cronSecret) {
+            return json({
+                durum: "Hata",
+                mesaj: "Yetkisiz erişim."
+            }, 401);
+        }
     }
-  } catch (e) {}
-  return text;
+
+    try {
+        // --------------------------------------------------
+        // 1. Import state
+        // --------------------------------------------------
+
+        await env.DB.prepare(`
+            CREATE TABLE IF NOT EXISTS bot_import_state (
+                id INTEGER PRIMARY KEY,
+                source TEXT NOT NULL,
+                current_offset INTEGER DEFAULT 0,
+                total_imported INTEGER DEFAULT 0,
+                last_run_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `).run();
+
+        await env.DB.prepare(`
+            INSERT OR IGNORE INTO bot_import_state
+            (id, source, current_offset, total_imported)
+            VALUES (1, 'tgadsspy', 0, 0)
+        `).run();
+
+        const state = await env.DB
+            .prepare(`
+                SELECT current_offset, total_imported
+                FROM bot_import_state
+                WHERE id = 1
+            `)
+            .first();
+
+        let offset = Number(state?.current_offset || 0);
+        let totalImported = Number(state?.total_imported || 0);
+
+        // --------------------------------------------------
+        // 2. Kaynaktan botları çek
+        // --------------------------------------------------
+
+        const apiUrl =
+            `${SOURCE_URL}?sort=mau&limit=${PAGE_SIZE}&offset=${offset}`;
+
+        const response = await fetch(apiUrl, {
+            headers: {
+                "Accept": "application/json",
+                "User-Agent": "BotArsivi/1.0"
+            }
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+
+            return json({
+                durum: "Kaynak Hatası",
+                status: response.status,
+                detay: errorText.slice(0, 500),
+                offset
+            }, response.status);
+        }
+
+        const payload = await response.json();
+
+        const sourceBots = Array.isArray(payload?.data)
+            ? payload.data
+            : [];
+
+        if (!sourceBots.length) {
+            return json({
+                durum: "Tamamlandı",
+                mesaj: "Bu offsette yeni bot bulunamadı.",
+                offset,
+                toplam_import: totalImported
+            });
+        }
+
+        // --------------------------------------------------
+        // 3. Maksimum 10 YENİ bot
+        // --------------------------------------------------
+
+        let added = [];
+        let skipped = [];
+
+        for (const bot of sourceBots) {
+
+            if (added.length >= MAX_NEW_BOTS) {
+                break;
+            }
+
+            const username = normalizeUsername(bot?.username);
+
+            if (!username) {
+                skipped.push({
+                    username: null,
+                    reason: "geçersiz_username"
+                });
+                continue;
+            }
+
+            // D1'de zaten var mı?
+            const existing = await env.DB
+                .prepare(`
+                    SELECT id
+                    FROM bots
+                    WHERE username = ?
+                    LIMIT 1
+                `)
+                .bind(username)
+                .first();
+
+            if (existing) {
+                skipped.push({
+                    username,
+                    reason: "zaten_var"
+                });
+                continue;
+            }
+
+            // --------------------------------------------------
+            // 4. Detay bilgisini çek
+            // --------------------------------------------------
+
+            let detail = null;
+
+            try {
+                const detailResponse = await fetch(
+                    `https://tgadsspy.com/api/v1/miniapps/${encodeURIComponent(username)}`,
+                    {
+                        headers: {
+                            "Accept": "application/json",
+                            "User-Agent": "BotArsivi/1.0"
+                        }
+                    }
+                );
+
+                if (detailResponse.ok) {
+                    const detailPayload =
+                        await detailResponse.json();
+
+                    detail = detailPayload?.data || null;
+                }
+            } catch (detailError) {
+                // Liste verisi yine de kullanılabilir.
+            }
+
+            const name =
+                cleanText(
+                    detail?.title ||
+                    bot?.title ||
+                    username
+                );
+
+            const description =
+                cleanText(
+                    detail?.description ||
+                    `${name} Telegram botu.`
+                );
+
+            const tags = buildTags(
+                detail?.botNiche ||
+                bot?.botNiche ||
+                ""
+            );
+
+            // --------------------------------------------------
+            // 5. D1 INSERT
+            // --------------------------------------------------
+
+            try {
+
+                await env.DB.prepare(`
+                    INSERT INTO bots (
+                        username,
+                        name,
+                        rating_score,
+                        rating_max,
+                        vote_count,
+                        description,
+                        languages,
+                        supports_inline,
+                        supports_groups,
+                        tags,
+                        raw_message,
+                        updated_at
+                    )
+                    VALUES (?, ?, 0.0, 5.0, 0, ?, ?, 0, 0, ?, ?, CURRENT_TIMESTAMP)
+                `)
+                .bind(
+                    username,
+                    name,
+                    description,
+                    "",
+                    tags,
+                    JSON.stringify({
+                        source: "tgadsspy",
+                        avatar_url: detail?.avatarUrl || bot?.avatarUrl || null,
+                        niche: detail?.botNiche || bot?.botNiche || null,
+                        mau: detail?.botActiveUsers || null,
+                        stars: detail?.botStarsRatingStars || null,
+                        stars_level: detail?.botStarsRatingLevel || null,
+                        source_url:
+                            `https://tgadsspy.com/miniapps/${username}`
+                    })
+                )
+                .run();
+
+                added.push({
+                    username,
+                    name
+                });
+
+                totalImported++;
+
+            } catch (insertError) {
+
+                // UNIQUE constraint nedeniyle yarış durumunda
+                // tekrar kayıt oluşmaz.
+                skipped.push({
+                    username,
+                    reason: "insert_hatasi"
+                });
+            }
+        }
+
+        // --------------------------------------------------
+        // 6. Cursor ilerlet
+        // --------------------------------------------------
+
+        const nextOffset =
+            offset + sourceBots.length;
+
+        await env.DB.prepare(`
+            UPDATE bot_import_state
+            SET
+                current_offset = ?,
+                total_imported = ?,
+                last_run_at = CURRENT_TIMESTAMP
+            WHERE id = 1
+        `)
+        .bind(
+            nextOffset,
+            totalImported
+        )
+        .run();
+
+        return json({
+            durum: "Başarılı",
+            kaynak: "tgadsspy",
+            kaynak_offset: offset,
+            sonraki_offset: nextOffset,
+            kaynakta_getirilen: sourceBots.length,
+            yeni_eklenen: added.length,
+            atlanan: skipped.length,
+            toplam_import: totalImported,
+            eklenenler: added,
+            atlananlar: skipped
+        });
+
+    } catch (error) {
+
+        console.error("BOT IMPORT ERROR:", error);
+
+        return json({
+            durum: "Hata",
+            mesaj: error?.message || "Bilinmeyen hata"
+        }, 500);
+    }
 }
 
-function translateTagsToTurkish(tags) {
-  if (!tags) return "#araçlar";
-  const tagMap = {
-    "#game": "#oyun", "#crypto": "#kripto", "#mining": "#finans", "#quiz": "#eğitim",
-    "#tools": "#araçlar", "#converter": "#dönüştürücü", "#files": "#dosya", "#sticker": "#araçlar",
-    "#media": "#medya", "#channel": "#kanal", "#admin": "#yönetim", "#polls": "#anket",
-    "#vote": "#anket", "#group": "#grup", "#moderation": "#güvenlik", "#security": "#güvenlik",
-    "#antispam": "#grup", "#chess": "#oyun", "#puzzle": "#zeka", "#arcade": "#eğlence",
-    "#fun": "#eğlence", "#translate": "#çeviri", "#languages": "#dil", "#email": "#eposta",
-    "#privacy": "#gizlilik", "#qr": "#araçlar", "#generator": "#araçlar", "#pdf": "#dosya",
-    "#documents": "#ofis", "#music": "#müzik", "#downloader": "#indirici", "#audio": "#ses",
-    "#instagram": "#medya", "#reels": "#video", "#tiktok": "#video", "#twitter": "#video",
-    "#youtube": "#video", "#mp3": "#müzik", "#finans": "#finans", "#bitcoin": "#kripto",
-    "#weather": "#araçlar", "#utility": "#araçlar", "#dictionary": "#sözlük", "#english": "#dil",
-    "#memes": "#eğlence", "#entertainment": "#eğlence"
-  };
-  
-  return tags.split(' ').map(t => tagMap[t] || t).join(' ');
+
+// --------------------------------------------------
+// Helpers
+// --------------------------------------------------
+
+function normalizeUsername(username) {
+
+    if (!username) {
+        return null;
+    }
+
+    let value = String(username)
+        .trim()
+        .replace(/^@/, "")
+        .toLowerCase();
+
+    // Telegram username formatı
+    if (!/^[a-z0-9_]{3,32}$/.test(value)) {
+        return null;
+    }
+
+    return value;
 }
+
+
+function cleanText(value) {
+
+    if (!value) {
+        return "";
+    }
+
+    return String(value)
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 2000);
+}
+
+
+function buildTags(niche) {
+
+    const map = {
+        crypto: "#kripto",
+        trading: "#trading",
+        finance: "#finans",
+        games: "#oyun",
+        gaming: "#oyun",
+        education: "#eğitim",
+        technology: "#teknoloji",
+        tech: "#teknoloji",
+        news: "#haber",
+        vpn: "#vpn",
+        bots: "#bot"
+    };
+
+    if (!niche) {
+        return "#telegram #bot";
+    }
+
+    const key = String(niche).toLowerCase();
+
+    return `${map[key] || "#" + key} #telegram #bot`;
+}
+
+
+function json(data, status = 200) {
+
+    return new Response(
+        JSON.stringify(data, null, 2),
+        {
+            status,
+            headers: {
+                "Content-Type":
+                    "application/json; charset=utf-8",
+                "Access-Control-Allow-Origin": "*"
+            }
+        }
+    );
+                  }
