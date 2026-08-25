@@ -1,7 +1,8 @@
 const SOURCE_URL = "https://tgadsspy.com/api/v1/miniapps";
 
-const SOURCE_PAGE_SIZE = 50;
+const SOURCE_PAGE_SIZE = 100;
 const MAX_NEW_BOTS = 30;
+const MAX_PAGES_PER_RUN = 3;
 const LOCK_SECONDS = 50;
 
 export async function onRequestGet({ request, env }) {
@@ -26,13 +27,21 @@ export async function onRequestGet({ request, env }) {
     }
   }
 
+  // API key kontrolü
+  if (!env.TGADSSPY_API_KEY) {
+    return json({
+      durum: "Hata",
+      mesaj: "TGADSSPY_API_KEY secret bulunamadı."
+    }, 500);
+  }
+
   const now = Math.floor(Date.now() / 1000);
   const lockUntil = now + LOCK_SECONDS;
 
   try {
 
     // ==================================================
-    // 1. IMPORT STATE
+    // 1. STATE TABLOSU
     // ==================================================
 
     await env.DB.prepare(`
@@ -55,7 +64,8 @@ export async function onRequestGet({ request, env }) {
         total_imported,
         locked_until
       )
-      VALUES (
+      VALUES
+      (
         1,
         'tgadsspy',
         0,
@@ -82,7 +92,6 @@ export async function onRequestGet({ request, env }) {
       .run();
 
     if (!lockResult.meta?.changes) {
-
       return json({
         durum: "Atlandı",
         mesaj: "Önceki import hâlâ çalışıyor."
@@ -91,7 +100,7 @@ export async function onRequestGet({ request, env }) {
 
 
     // ==================================================
-    // 3. CURSOR OKU
+    // 3. STATE OKU
     // ==================================================
 
     const state = await env.DB.prepare(`
@@ -102,37 +111,39 @@ export async function onRequestGet({ request, env }) {
       WHERE id = 1
     `).first();
 
-    let offset =
+    const startOffset =
       Number(state?.current_offset || 0);
+
+    let offset = startOffset;
 
     let totalImported =
       Number(state?.total_imported || 0);
 
 
     // ==================================================
-    // 4. 30 YENİ BOT BULANA KADAR SAYFALARI TARA
+    // 4. 30 YENİ BOT BUL
     // ==================================================
 
     const selectedBots = [];
 
-    // Aynı cron çalışmasında aynı username
-    // ikinci kez seçilmesin.
+    // Aynı cron çalışmasında tekrar username seçilmesini
+    // engeller.
     const runSeen = new Set();
 
     let pagesFetched = 0;
     let sourceRecordsScanned = 0;
-
-    let lastConsumedOffset = offset;
-
     let sourceTotal = null;
 
+    let cursorAfterRun = offset;
+
     while (
-      selectedBots.length < MAX_NEW_BOTS
+      selectedBots.length < MAX_NEW_BOTS &&
+      pagesFetched < MAX_PAGES_PER_RUN
     ) {
 
-      // ----------------------------------------------
-      // Kaynak API
-      // ----------------------------------------------
+      // ------------------------------------------------
+      // API URL
+      // ------------------------------------------------
 
       const apiUrl =
         `${SOURCE_URL}` +
@@ -140,20 +151,26 @@ export async function onRequestGet({ request, env }) {
         `&limit=${SOURCE_PAGE_SIZE}` +
         `&offset=${offset}`;
 
+
+      // ------------------------------------------------
+      // API İSTEĞİ
+      // ------------------------------------------------
+
       const response = await fetch(
         apiUrl,
         {
           headers: {
             "Accept": "application/json",
+            "X-Api-Key": env.TGADSSPY_API_KEY,
             "User-Agent": "BotArsivi/1.0"
           }
         }
       );
 
 
-      // ----------------------------------------------
-      // Rate limit
-      // ----------------------------------------------
+      // ------------------------------------------------
+      // RATE LIMIT
+      // ------------------------------------------------
 
       if (response.status === 429) {
 
@@ -164,18 +181,16 @@ export async function onRequestGet({ request, env }) {
 
         return json({
           durum: "Rate Limit",
-          mesaj:
-            "Kaynak API rate limit uyguladı.",
-          retry_after:
-            retryAfter,
+          mesaj: "Kaynak API rate limit uyguladı.",
+          retry_after: retryAfter,
           offset
         }, 429);
       }
 
 
-      // ----------------------------------------------
-      // Diğer API hataları
-      // ----------------------------------------------
+      // ------------------------------------------------
+      // API HATASI
+      // ------------------------------------------------
 
       if (!response.ok) {
 
@@ -187,8 +202,7 @@ export async function onRequestGet({ request, env }) {
         return json({
           durum: "Kaynak Hatası",
           status: response.status,
-          detay:
-            errorText.slice(0, 500),
+          detay: errorText.slice(0, 500),
           offset
         }, response.status);
       }
@@ -208,20 +222,24 @@ export async function onRequestGet({ request, env }) {
       pagesFetched++;
 
 
-      // ----------------------------------------------
-      // Kaynak bitti
-      // ----------------------------------------------
+      // ------------------------------------------------
+      // KAYNAK BİTTİ
+      // ------------------------------------------------
 
       if (!sourceBots.length) {
         break;
       }
 
 
-      // ----------------------------------------------
-      // Bu sayfadaki username'leri hazırla
-      // ----------------------------------------------
+      sourceRecordsScanned +=
+        sourceBots.length;
 
-      const pageBots = [];
+
+      // ------------------------------------------------
+      // USERNAME'LERİ TEMİZLE
+      // ------------------------------------------------
+
+      const normalizedBots = [];
 
       for (
         let i = 0;
@@ -241,7 +259,7 @@ export async function onRequestGet({ request, env }) {
           continue;
         }
 
-        pageBots.push({
+        normalizedBots.push({
           ...bot,
           _username: username,
           _sourceIndex: i
@@ -249,21 +267,46 @@ export async function onRequestGet({ request, env }) {
       }
 
 
-      // ----------------------------------------------
-      // D1'de mevcut username'leri TEK sorguda bul
-      // ----------------------------------------------
+      // ------------------------------------------------
+      // AYNI SAYFADAKİ DUPLICATE'LERİ TEMİZLE
+      // ------------------------------------------------
+
+      const uniquePageBots = [];
+
+      const pageSeen =
+        new Set();
+
+      for (
+        const bot of normalizedBots
+      ) {
+
+        if (
+          pageSeen.has(
+            bot._username
+          )
+        ) {
+          continue;
+        }
+
+        pageSeen.add(
+          bot._username
+        );
+
+        uniquePageBots.push(bot);
+      }
+
+
+      // ------------------------------------------------
+      // D1'DEN MEVCUT BOTLARI TEK SORGUDA BUL
+      // ------------------------------------------------
 
       const pageUsernames =
-        [...new Set(
-          pageBots.map(
-            bot => bot._username
-          )
-        )];
-
+        uniquePageBots.map(
+          bot => bot._username
+        );
 
       const existingSet =
         new Set();
-
 
       if (pageUsernames.length) {
 
@@ -293,42 +336,47 @@ export async function onRequestGet({ request, env }) {
             );
 
           if (username) {
-            existingSet.add(username);
+            existingSet.add(
+              username
+            );
           }
         }
       }
 
 
-      // ----------------------------------------------
-      // Yeni botları seç
-      // ----------------------------------------------
+      // ------------------------------------------------
+      // YENİ BOTLARI SEÇ
+      // ------------------------------------------------
 
-      for (const bot of pageBots) {
+      for (
+        const bot of uniquePageBots
+      ) {
 
         const username =
           bot._username;
 
 
         // D1'de zaten var
-        if (existingSet.has(username)) {
+        if (
+          existingSet.has(username)
+        ) {
           continue;
         }
 
 
-        // Bu cron çalışmasında zaten seçildi
-        if (runSeen.has(username)) {
+        // Bu cron'da zaten seçildi
+        if (
+          runSeen.has(username)
+        ) {
           continue;
         }
 
 
         runSeen.add(username);
 
-        selectedBots.push({
-          ...bot
-        });
+        selectedBots.push(bot);
 
 
-        // 30'a ulaştık
         if (
           selectedBots.length >=
           MAX_NEW_BOTS
@@ -338,57 +386,38 @@ export async function onRequestGet({ request, env }) {
       }
 
 
-      // ----------------------------------------------
-      // Sayfanın kaç kaydını tükettiğimizi hesapla
-      // ----------------------------------------------
-
-      sourceRecordsScanned +=
-        sourceBots.length;
-
-
-      // 30 bot bulunduysa:
-      //
-      // Son seçilen botun kaynak index'i + 1
-      //
-      // Böylece o sayfanın geri kalanına
-      // bir sonraki cron'da devam edilir.
+      // ------------------------------------------------
+      // CURSOR
+      // ------------------------------------------------
 
       if (
         selectedBots.length >=
         MAX_NEW_BOTS
       ) {
 
-        const lastBot =
+        const lastSelected =
           selectedBots[
             selectedBots.length - 1
           ];
 
-        offset =
+        cursorAfterRun =
           offset +
-          lastBot._sourceIndex +
+          lastSelected._sourceIndex +
           1;
-
-        lastConsumedOffset =
-          offset;
 
         break;
       }
 
 
-      // ----------------------------------------------
-      // Bu sayfanın tamamı tüketildi
-      // ----------------------------------------------
-
-      offset =
-        offset +
+      // Sayfanın tamamı tarandı
+      offset +=
         sourceBots.length;
 
-      lastConsumedOffset =
+      cursorAfterRun =
         offset;
 
 
-      // Güvenlik:
-      // Kaynakta daha fazla kayıt yoksa çık.
+      // Kaynak bitti
       if (
         sourceTotal > 0 &&
         offset >= sourceTotal
@@ -397,9 +426,10 @@ export async function onRequestGet({ request, env }) {
       }
 
 
-      // ANON offset limiti.
-      // API key kullanınca bu sınır yükselebilir.
-      if (offset >= 1000) {
+      // FREE API offset sınırı
+      if (
+        offset >= 10000
+      ) {
         break;
       }
     }
@@ -428,6 +458,8 @@ export async function onRequestGet({ request, env }) {
               headers: {
                 "Accept":
                   "application/json",
+                "X-Api-Key":
+                  env.TGADSSPY_API_KEY,
                 "User-Agent":
                   "BotArsivi/1.0"
               }
@@ -435,7 +467,9 @@ export async function onRequestGet({ request, env }) {
           );
 
 
-        if (detailResponse.ok) {
+        if (
+          detailResponse.ok
+        ) {
 
           const detailPayload =
             await detailResponse.json();
@@ -505,25 +539,36 @@ export async function onRequestGet({ request, env }) {
             null,
 
           mau:
-            detail?.botActiveUsers ||
-            bot?.botActiveUsers ||
+            detail?.botActiveUsers ??
+            bot?.botActiveUsers ??
             null,
 
           stars:
-            detail?.botStarsRatingStars ||
+            detail?.botStarsRatingStars ??
             null,
 
           stars_level:
-            detail?.botStarsRatingLevel ||
+            detail?.botStarsRatingLevel ??
             null,
 
           popular_rank:
-            detail?.popularBotsRank ||
+            detail?.popularBotsRank ??
+            null,
+
+          growth_pct:
+            detail?.growthPct ??
+            bot?.growthPct ??
             null,
 
           sponsored:
-            detail?.botSponsoredEnabled ||
+            detail?.botSponsoredEnabled ??
+            bot?.botSponsoredEnabled ??
             false,
+
+          last_enrichment:
+            detail?.lastBotEnrichmentAt ??
+            bot?.lastBotEnrichmentAt ??
+            null,
 
           source_profile:
             `https://tgadsspy.com/miniapps/${bot._username}`
@@ -613,13 +658,12 @@ export async function onRequestGet({ request, env }) {
       SET
         current_offset = ?,
         total_imported = ?,
-        last_run_at =
-          CURRENT_TIMESTAMP,
+        last_run_at = CURRENT_TIMESTAMP,
         locked_until = 0
       WHERE id = 1
     `)
     .bind(
-      lastConsumedOffset,
+      cursorAfterRun,
       totalImported
     )
     .run();
@@ -637,13 +681,14 @@ export async function onRequestGet({ request, env }) {
       kaynak:
         "tgadsspy",
 
+      api_plan:
+        "FREE",
+
       baslangic_offset:
-        Number(
-          state?.current_offset || 0
-        ),
+        startOffset,
 
       sonraki_offset:
-        lastConsumedOffset,
+        cursorAfterRun,
 
       sayfa_sayisi:
         pagesFetched,
@@ -668,7 +713,7 @@ export async function onRequestGet({ request, env }) {
           ? Math.max(
               0,
               sourceTotal -
-              lastConsumedOffset
+              cursorAfterRun
             )
           : null,
 
@@ -691,11 +736,9 @@ export async function onRequestGet({ request, env }) {
       error
     );
 
-
     try {
       await unlock(env);
     } catch {}
-
 
     return json({
       durum: "Hata",
@@ -722,7 +765,7 @@ async function unlock(env) {
 
 
 // ======================================================
-// USERNAME TEMİZLE
+// USERNAME
 // ======================================================
 
 function normalizeUsername(username) {
@@ -737,7 +780,6 @@ function normalizeUsername(username) {
       .replace(/^@/, "")
       .toLowerCase();
 
-
   if (
     !/^[a-z0-9_]{3,32}$/.test(value)
   ) {
@@ -749,7 +791,7 @@ function normalizeUsername(username) {
 
 
 // ======================================================
-// METİN TEMİZLE
+// TEXT
 // ======================================================
 
 function cleanText(value) {
@@ -766,7 +808,7 @@ function cleanText(value) {
 
 
 // ======================================================
-// ETİKET
+// TAGS
 // ======================================================
 
 function buildTags(niche) {
@@ -774,7 +816,6 @@ function buildTags(niche) {
   if (!niche) {
     return "#telegram #bot";
   }
-
 
   const map = {
 
@@ -821,12 +862,10 @@ function buildTags(niche) {
       "#yapayzeka"
   };
 
-
   const key =
     String(niche)
       .trim()
       .toLowerCase();
-
 
   return `${
     map[key] ||
