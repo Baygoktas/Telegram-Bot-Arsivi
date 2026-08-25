@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Bot Arşivi</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #131b2e;
+      --card-border: rgba(255, 255, 255, 0.07);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-gradient: linear-gradient(135deg, #38bdf8 0%, #2563eb 100%);
+      --rating-bg: rgba(250, 204, 21, 0.12);
+      --rating-color: #facc15;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 14px; padding-bottom: 30px; }
+
+    .app-header { display: flex; align-items: center; gap: 12px; padding: 6px 4px 16px 4px; }
+    .header-avatar {
+      width: 48px; height: 48px; border-radius: 50%; background: var(--accent-gradient);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35); border: 2px solid rgba(255, 255, 255, 0.15);
+      overflow: hidden; flex-shrink: 0;
+    }
+    .header-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .header-info h1 {
+      font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 30%, #93c5fd 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header-info p { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-top: 1px; }
+
+    .search-box { position: sticky; top: 0; background: var(--bg); padding-bottom: 12px; z-index: 10; }
+    .search-wrapper { position: relative; width: 100%; }
+    .search-wrapper input {
+      width: 100%; padding: 13px 16px 13px 42px; border-radius: 14px; border: 1px solid var(--card-border);
+      background: var(--card-bg); color: var(--text); font-size: 14px; outline: none; transition: 0.2s;
+    }
+    .search-wrapper input:focus { border-color: var(--accent); }
+    .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); opacity: 0.5; font-size: 15px; }
+
+    .tags-container { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 12px; scrollbar-width: none; }
+    .tags-container::-webkit-scrollbar { display: none; }
+    .tag-chip {
+      background: rgba(255,255,255,0.05); padding: 7px 14px; border-radius: 20px;
+      font-size: 12px; font-weight: 500; white-space: nowrap; cursor: pointer; color: var(--text-muted);
+      border: 1px solid rgba(255,255,255,0.04); transition: 0.2s;
+    }
+    .tag-chip.active { background: var(--accent-gradient); color: #ffffff; font-weight: 600; border-color: transparent; }
+
+    .bot-list { display: flex; flex-direction: column; gap: 12px; }
+    .bot-card {
+      background: var(--card-bg); border-radius: 18px; padding: 16px;
+      display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--card-border);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .bot-title { font-family: 'Outfit', sans-serif; font-size: 17px; font-weight: 700; color: #fff; }
+    .bot-username { font-size: 13px; color: var(--accent); margin-top: 1px; font-weight: 500; }
+    .rating-badge {
+      background: var(--rating-bg); color: var(--rating-color);
+      padding: 4px 8px; border-radius: 8px; font-size: 13px; font-weight: 700;
+    }
+    .bot-desc {
+      font-size: 13.5px; color: #cbd5e1; line-height: 1.45;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .bot-desc.expanded { -webkit-line-clamp: unset; }
+    .badges-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+    .feature-badge { font-size: 11px; padding: 4px 8px; border-radius: 8px; background: rgba(255,255,255,0.06); color: var(--text-muted); font-weight: 500; }
+    .card-footer { display: flex; gap: 8px; margin-top: 4px; }
+    .btn-open {
+      flex: 1; background: var(--accent-gradient); color: #ffffff;
+      text-align: center; padding: 12px; border-radius: 12px;
+      font-weight: 700; font-size: 14px; text-decoration: none; display: block;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-header">
+    <div class="header-avatar">
+      <img src="https://api.dicebear.com/7.x/bottts/svg?seed=BotArsivi&backgroundColor=0284c7" alt="Bot Arşivi">
+    </div>
+    <div class="header-info">
+      <h1>Bot Arşivi</h1>
+      <p>Keşfet, filtrele ve anında başlat</p>
+    </div>
+  </div>
+
+  <div class="search-box">
+    <div class="search-wrapper">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Bot veya kategori ara...">
+    </div>
+  </div>
+
+  <div class="tags-container" id="tagsContainer">
+    <div class="tag-chip active" onclick="filterByTag('')">Tümü</div>
+  </div>
+
+  <div class="bot-list" id="botList">
+    <div style="text-align: center; color: var(--text-muted); padding: 25px;">Yükleniyor...</div>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) { tg.expand(); tg.ready(); }
+    let bots = [];
+    let activeTag = "";
+
+    async function fetchBots(search = "", tag = "") {
+      try {
+        const res = await fetch(`/api/bots?search=${encodeURIComponent(search)}&tag=${encodeURIComponent(tag)}`);
+        bots = await res.json();
+        renderBots();
+        if(!tag && !search) renderTags();
+      } catch(e) {
+        document.getElementById('botList').innerHTML = '<div style="text-align:center;">Veriler yüklenemedi.</div>';
+      }
+    }
+
+    function renderTags() {
+      const tagSet = new Set();
+      bots.forEach(b => {
+        if (b.tags) {
+          b.tags.split(' ').forEach(t => {
+            if (t.startsWith('#')) tagSet.add(t.replace('#', ''));
+          });
+        }
+      });
+      const container = document.getElementById('tagsContainer');
+      let html = '<div class="tag-chip ' + (activeTag === "" ? "active" : "") + '" onclick="filterByTag(\'\')">Tümü</div>';
+      Array.from(tagSet).slice(0, 15).forEach(t => {
+        html += `<div class="tag-chip ${activeTag === t ? "active" : ""}" onclick="filterByTag('${t}')">#${t}</div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    function renderBots() {
+      const container = document.getElementById('botList');
+      if (!bots.length) {
+        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px;">Eşleşen bot bulunamadı.</div>';
+        return;
+      }
+      container.innerHTML = bots.map(b => `
+        <div class="bot-card">
+          <div class="card-header">
+            <div>
+              <div class="bot-title">${b.name || b.username}</div>
+              <div class="bot-username">@${b.username}</div>
+            </div>
+            <div class="rating-badge">⭐ ${b.rating_score} <span style="font-size:10px; opacity:0.8;">(${b.vote_count})</span></div>
+          </div>
+          <div class="bot-desc" onclick="this.classList.toggle('expanded')">${b.description || 'Açıklama bulunmuyor.'}</div>
+          <div class="badges-row">
+            ${b.supports_inline ? '<span class="feature-badge">⚡ Satır İçi (Inline)</span>' : ''}
+            ${b.supports_groups ? '<span class="feature-badge">👥 Grup Desteği</span>' : ''}
+            ${b.tags ? b.tags.split(' ').slice(0, 3).map(t => `<span class="feature-badge">${t}</span>`).join('') : ''}
+          </div>
+          <div class="card-footer">
+            <a href="https://t.me/${b.username}?start=botarsivi" class="btn-open" target="_blank">Botu Başlat</a>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterByTag(tag) {
+      activeTag = tag;
+      fetchBots(document.getElementById('searchInput').value, tag);
+    }
+
+    let timeout = null;
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => fetchBots(e.target.value, activeTag), 300);
+    });
+
+    fetchBots();
+  </script>
+</body>
+</html>
