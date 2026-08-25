@@ -1,5 +1,4 @@
 export async function onRequestGet({ env }) {
-  // Telegram'da gerçekten var olan, aktif ve popüler doğrulanmış botlar
   const realActiveBots = [
     { u: "Notcoin_bot", n: "Notcoin", d: "Telegram'ın en popüler resmi tıklama ve kazanç mini uygulaması.", t: "#oyun #finans #miniature" },
     { u: "DurgerKingBot", n: "Durger King", d: "Telegram'ın resmi test ve örnek botu.", t: "#araçlar #test" },
@@ -15,36 +14,17 @@ export async function onRequestGet({ env }) {
     { u: "Gamee", n: "GAMEE Prizes", d: "Yüzlerce eğlenceli mini HTML5 oyununu Telegram içinde oynayın.", t: "#oyun #arcade #eğlence" }
   ];
 
-  let savedCount = 0;
-  let logs = [];
-
   for (const item of realActiveBots) {
     await env.DB.prepare(`
       INSERT INTO bots (username, name, rating_score, rating_max, vote_count, description, tags, supports_inline, supports_groups, updated_at)
-      VALUES (?, ?, ?, 5.0, ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)
+      VALUES (?, ?, 0.0, 5.0, 0, ?, ?, 1, 1, CURRENT_TIMESTAMP)
       ON CONFLICT(username) DO UPDATE SET
-        name = excluded.name,
         description = excluded.description,
-        tags = excluded.tags,
-        updated_at = CURRENT_TIMESTAMP
-    `).bind(
-      item.u.toLowerCase(),
-      item.n,
-      (4.7 + Math.random() * 0.2).toFixed(1), // Gerçekçi puan aralığı
-      Math.floor(400 + Math.random() * 600), // Gerçekçi oy sayısı
-      item.d,
-      item.t
-    ).run();
-
-    savedCount++;
-    logs.push(`@${item.u}`);
+        tags = excluded.tags
+    `).bind(item.u.toLowerCase(), item.n, item.d, item.t).run();
   }
 
-  return new Response(JSON.stringify({
-    durum: "Başarılı",
-    guncellenen_gercek_bot_sayisi: savedCount,
-    botlar: logs
-  }, null, 2), {
+  return new Response(JSON.stringify({ durum: "Başarılı, tüm puanlar sıfırlandı ve botlar eklendi." }), {
     headers: { "Content-Type": "application/json; charset=utf-8" }
   });
 }
