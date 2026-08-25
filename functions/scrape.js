@@ -1,89 +1,60 @@
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
-  // l parametresi ile harf seçimi (a, b, c, d ... veya num)
-  const letter = url.searchParams.get("l") || "a";
+  // before parametresi sayfalama içindir (Örn: ?before=2500, ?before=2000)
+  const before = url.searchParams.get("before") || "";
   let savedCount = 0;
   let logs = [];
 
   try {
-    // Sitedeki harf listesi sayfasını çekiyoruz
-    const targetUrl = `http://www.botsarchive.com/bots.php?l=${letter}`;
-    const siteRes = await fetch(targetUrl, {
+    const targetUrl = before 
+      ? `https://t.me/s/botsarchive?before=${before}` 
+      : `https://t.me/s/botsarchive`;
+
+    const res = await fetch(targetUrl, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
       }
     });
 
-    if (!siteRes.ok) {
-      return new Response(JSON.stringify({ hata: "Siteye erişilemedi", status: siteRes.status }), { status: 500 });
+    if (!res.ok) {
+      return new Response(JSON.stringify({ hata: "Telegram kanalına erişilemedi", status: res.status }), { status: 500 });
     }
 
-    const html = await siteRes.text();
+    const html = await res.text();
+    
+    // Telegram web arayüzündeki mesaj bloklarını ayıkla
+    const messageBlocks = html.split('<div class="tgme_widget_message_wrap');
 
-    // Sayfadaki bot bağlantılarını yakala (bot.php?id=1234 formatı)
-    const botIdMatches = [...html.matchAll(/href=["']bot\.php\?id=(\d+)["']/gi)];
-    const uniqueIds = [...new Set(botIdMatches.map(m => m[1]))].slice(0, 15); // Zaman aşımına takılmamak için harf başına ilk 15 bot
+    for (const block of messageBlocks) {
+      if (!block.includes("Username:") && !block.includes("Name:")) continue;
 
-    for (const botId of uniqueIds) {
-      try {
-        const botPageRes = await fetch(`http://www.botsarchive.com/bot.php?id=${botId}`, {
-          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" }
-        });
-        if (!botPageRes.ok) continue;
+      // Temiz metni yakala
+      const textMatch = block.match(/<div class="tgme_widget_message_text[^"]*">([\s\S]*?)<\/div>/i);
+      if (!textMatch) continue;
 
-        const botHtml = await botPageRes.text();
-        if (botHtml.includes("Bot not found")) continue;
+      const rawText = textMatch[1]
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .trim();
 
-        // Kullanıcı adı
-        const usernameMatch = botHtml.match(/t\.me\/([a-zA-Z0-9_]+bot)/i) || botHtml.match(/@([a-zA-Z0-9_]+bot)/i);
-        if (!usernameMatch) continue;
-        const username = usernameMatch[1].toLowerCase();
+      const botData = await parseAndTranslate(rawText);
+      if (!botData) continue;
 
-        // İsim
-        const titleMatch = botHtml.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-        const name = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '').trim() : username;
+      await env.DB.prepare(`
+        INSERT INTO bots (username, name, rating_score, rating_max, vote_count, description, languages, supports_inline, supports_groups, tags, raw_message, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(username) DO UPDATE SET
+          name = excluded.name, rating_score = excluded.rating_score, rating_max = excluded.rating_max,
+          vote_count = excluded.vote_count, description = excluded.description, languages = excluded.languages,
+          supports_inline = excluded.supports_inline, supports_groups = excluded.supports_groups, tags = excluded.tags,
+          raw_message = excluded.raw_message, updated_at = CURRENT_TIMESTAMP
+      `).bind(
+        botData.username, botData.name, botData.rating_score, botData.rating_max, botData.vote_count,
+        botData.description, botData.languages, botData.supports_inline, botData.supports_groups, botData.tags, botData.raw_message
+      ).run();
 
-        // Puan ve Oy
-        const ratingMatch = botHtml.match(/(\d+(?:\.\d+)?)\s*\/\s*5/);
-        const rating_score = ratingMatch ? parseFloat(ratingMatch[1]) : 4.0;
-        const votesMatch = botHtml.match(/(\d+)\s+votes?/i);
-        const vote_count = votesMatch ? parseInt(votesMatch[1]) : 10;
-
-        // Açıklama
-        const descMatch = botHtml.match(/Description:\s*([\s\S]*?)(?=(Languages:|Supports inline:|Groups:|Tags:|<div|<\/p|$))/i);
-        const rawDesc = descMatch ? descMatch[1].replace(/<[^>]+>/g, '').trim() : "";
-
-        // Etiketler
-        const tagsMatches = [...botHtml.matchAll(/#([a-zA-Z0-9_]+)/g)].map(m => m[1]);
-
-        // Türkçe Çeviriler
-        const translatedDesc = rawDesc ? await translateToTurkish(rawDesc) : "";
-        const translatedTags = tagsMatches.length ? await translateTags(tagsMatches.slice(0, 6)) : "";
-
-        await env.DB.prepare(`
-          INSERT INTO bots (username, name, rating_score, rating_max, vote_count, description, tags, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-          ON CONFLICT(username) DO UPDATE SET
-            name = excluded.name,
-            rating_score = excluded.rating_score,
-            rating_max = excluded.rating_max,
-            vote_count = excluded.vote_count,
-            description = excluded.description,
-            tags = excluded.tags,
-            updated_at = CURRENT_TIMESTAMP
-        `).bind(
-          username,
-          name,
-          rating_score,
-          5.0,
-          vote_count,
-          translatedDesc,
-          translatedTags
-        ).run();
-
-        savedCount++;
-        logs.push(`@${username}`);
-      } catch (err) {}
+      savedCount++;
+      logs.push(`@${botData.username}`);
     }
 
   } catch (err) {
@@ -92,7 +63,6 @@ export async function onRequestGet({ request, env }) {
 
   return new Response(JSON.stringify({
     durum: "Tamamlandı",
-    taranan_harf: letter,
     eklenen_sayisi: savedCount,
     botlar: logs
   }, null, 2), {
@@ -100,7 +70,7 @@ export async function onRequestGet({ request, env }) {
   });
 }
 
-async function translateToTurkish(text) {
+async function translateText(text) {
   if (!text) return "";
   try {
     const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=tr&dt=t&q=${encodeURIComponent(text)}`);
@@ -111,13 +81,45 @@ async function translateToTurkish(text) {
   }
 }
 
-async function translateTags(tagList) {
-  if (!tagList || !tagList.length) return "";
+async function translateTags(tags) {
+  if (!tags) return "";
+  const cleaned = tags.replace(/#/g, '').trim();
+  if (!cleaned) return "";
   try {
-    const joined = tagList.join(", ");
-    const translated = await translateToTurkish(joined);
-    return translated.split(/[, ]+/).filter(Boolean).map(t => `#${t.replace(/[^a-zA-Z0-9çğıöşüÇĞİÖŞÜ]/g, '').toLowerCase()}`).join(' ');
+    const translated = await translateText(cleaned);
+    return translated.split(/[\s,]+/).filter(Boolean).map(t => `#${t.toLowerCase()}`).join(' ');
   } catch (e) {
-    return tagList.map(t => `#${t}`).join(' ');
+    return tags;
   }
+}
+
+async function parseAndTranslate(text) {
+  const nameMatch = text.match(/Name:\s*([^\n]+)/i);
+  const usernameMatch = text.match(/Username:\s*@?([a-zA-Z0-9_]+bot)/i);
+  const ratingMatch = text.match(/Rating:.*?\((\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)\s+on\s+(\d+)\s+votes\)/i);
+  const descMatch = text.match(/Description:\s*([\s\S]*?)(?=(Languages:|Supports inline:|Groups:|Tags:|Developer:|$))/i);
+  const langMatch = text.match(/Languages:\s*([^\n]+)/i);
+  const inlineMatch = text.match(/Supports inline:\s*([^\n]+)/i);
+  const groupsMatch = text.match(/Groups:\s*([^\n]+)/i);
+  const tagsMatch = text.match(/Tags:\s*([^\n]+)/i);
+
+  if (!usernameMatch) return null;
+
+  const rawDesc = descMatch ? descMatch[1].trim() : "";
+  const translatedDesc = rawDesc ? await translateText(rawDesc) : "";
+  const translatedTags = tagsMatch ? await translateTags(tagsMatch[1]) : "";
+
+  return {
+    username: usernameMatch[1].toLowerCase(),
+    name: nameMatch ? nameMatch[1].trim() : usernameMatch[1],
+    rating_score: ratingMatch ? parseFloat(ratingMatch[1]) : 0,
+    rating_max: ratingMatch ? parseFloat(ratingMatch[2]) : 5,
+    vote_count: ratingMatch ? parseInt(ratingMatch[3]) : 0,
+    description: translatedDesc,
+    languages: langMatch ? langMatch[1].trim() : "",
+    supports_inline: inlineMatch && inlineMatch[1].toLowerCase().includes("yes") ? 1 : 0,
+    supports_groups: groupsMatch && groupsMatch[1].toLowerCase().includes("yes") ? 1 : 0,
+    tags: translatedTags,
+    raw_message: text
+  };
 }
