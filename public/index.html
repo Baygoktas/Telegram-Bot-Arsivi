@@ -7,12 +7,12 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #0b0f19;
       --card-bg: #131b2e;
-      --card-border: rgba(255, 255, 255, 0.07);
+      --card-border: rgba(255, 255, 255, 0.08);
       --text: #f8fafc;
       --text-muted: #94a3b8;
       --accent: #38bdf8;
@@ -21,23 +21,48 @@
       --rating-color: #facc15;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 14px; padding-bottom: 30px; }
+    body { background-color: var(--bg); color: var(--text); padding: 16px; padding-bottom: 35px; }
 
-    /* Başlık */
-    .app-header { display: flex; align-items: center; gap: 12px; padding: 6px 4px 16px 4px; }
-    .header-avatar {
-      width: 48px; height: 48px; border-radius: 50%; background: var(--accent-gradient);
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35); border: 2px solid rgba(255, 255, 255, 0.15);
-      overflow: hidden; flex-shrink: 0;
+    /* Ortalanmış Estetik Header & Büyük Bot Profil Resmi */
+    .app-header-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 12px 0 20px 0;
     }
-    .header-avatar img { width: 100%; height: 100%; object-fit: cover; }
-    .header-info h1 {
-      font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;
-      background: linear-gradient(135deg, #ffffff 30%, #93c5fd 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    .main-avatar-wrap {
+      position: relative;
+      margin-bottom: 12px;
     }
-    .header-info p { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-top: 1px; }
+    .main-avatar {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #38bdf8;
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.35);
+      background: #1e293b;
+      display: block;
+    }
+    .app-header-center h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 40%, #93c5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+    }
+    .app-header-center p {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+      max-width: 280px;
+      line-height: 1.4;
+    }
 
     /* Arama */
     .search-box { position: sticky; top: 0; background: var(--bg); padding-bottom: 12px; z-index: 10; }
@@ -50,7 +75,7 @@
     .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); opacity: 0.5; font-size: 15px; }
 
     /* Etiketler */
-    .tags-container { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 12px; scrollbar-width: none; }
+    .tags-container { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 14px; scrollbar-width: none; }
     .tags-container::-webkit-scrollbar { display: none; }
     .tag-chip {
       background: rgba(255,255,255,0.05); padding: 7px 14px; border-radius: 20px;
@@ -60,27 +85,26 @@
     .tag-chip.active { background: var(--accent-gradient); color: #ffffff; font-weight: 600; border-color: transparent; }
 
     /* Bot Kartları */
-    .bot-list { display: flex; flex-direction: column; gap: 12px; }
+    .bot-list { display: flex; flex-direction: column; gap: 14px; }
     .bot-card {
-      background: var(--card-bg); border-radius: 18px; padding: 16px;
+      background: var(--card-bg); border-radius: 20px; padding: 16px;
       display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--card-border);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     }
-    .card-top { display: flex; align-items: center; justify-content: space-between; }
-    .bot-identity { display: flex; align-items: center; gap: 12px; }
+    .card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .bot-identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
     
-    /* Bot Profil Resmi */
     .bot-pfp {
-      width: 44px; height: 44px; border-radius: 50%; object-fit: cover;
-      border: 2px solid rgba(255, 255, 255, 0.08); background: #1e293b;
+      width: 46px; height: 46px; border-radius: 50%; object-fit: cover;
+      border: 2px solid rgba(255, 255, 255, 0.1); background: #1e293b;
       flex-shrink: 0;
     }
 
-    .bot-title { font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 700; color: #fff; line-height: 1.2; }
+    .bot-title { font-family: 'Outfit', sans-serif; font-size: 16.5px; font-weight: 700; color: #fff; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .bot-username { font-size: 12.5px; color: var(--accent); margin-top: 2px; font-weight: 500; }
     .rating-badge {
       background: var(--rating-bg); color: var(--rating-color);
-      padding: 4px 8px; border-radius: 8px; font-size: 12.5px; font-weight: 700; white-space: nowrap;
+      padding: 5px 9px; border-radius: 10px; font-size: 12.5px; font-weight: 700; white-space: nowrap; flex-shrink: 0;
     }
     .bot-desc {
       font-size: 13.5px; color: #cbd5e1; line-height: 1.45;
@@ -92,28 +116,29 @@
     .card-footer { display: flex; gap: 8px; margin-top: 4px; }
     .btn-open {
       flex: 1; background: var(--accent-gradient); color: #ffffff;
-      text-align: center; padding: 11px; border-radius: 12px;
+      text-align: center; padding: 12px; border-radius: 12px;
       font-weight: 700; font-size: 14px; text-decoration: none; display: block;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
     }
   </style>
 </head>
 <body>
 
-  <div class="app-header">
-    <div class="header-avatar">
-      <img src="https://api.dicebear.com/7.x/bottts/svg?seed=BotArsivi&backgroundColor=0284c7" alt="Bot Arşivi">
+  <!-- Ortalanmış Başlık & Botarsivibot Profil Resmi -->
+  <div class="app-header-center">
+    <div class="main-avatar-wrap">
+      <img src="https://t.me/i/userpic/320/Botarsivibot.jpg" 
+           onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=BotArsivi&backgroundColor=0284c7';" 
+           class="main-avatar" alt="Bot Arşivi">
     </div>
-    <div class="header-info">
-      <h1>Bot Arşivi</h1>
-      <p>Keşfet, filtrele ve anında başlat</p>
-    </div>
+    <h1>Bot Arşivi</h1>
+    <p>Telegram'ın en kullanışlı botlarını keşfet, filtrele ve anında başlat</p>
   </div>
 
   <div class="search-box">
     <div class="search-wrapper">
       <span class="search-icon">🔍</span>
-      <input type="text" id="searchInput" placeholder="Bot veya kategori ara...">
+      <input type="text" id="searchInput" placeholder="Bot veya özellik ara...">
     </div>
   </div>
 
@@ -153,7 +178,7 @@
       });
       const container = document.getElementById('tagsContainer');
       let html = '<div class="tag-chip ' + (activeTag === "" ? "active" : "") + '" onclick="filterByTag(\'\')">Tümü</div>';
-      Array.from(tagSet).slice(0, 15).forEach(t => {
+      Array.from(tagSet).slice(0, 20).forEach(t => {
         html += `<div class="tag-chip ${activeTag === t ? "active" : ""}" onclick="filterByTag('${t}')">#${t}</div>`;
       });
       container.innerHTML = html;
@@ -166,7 +191,6 @@
         return;
       }
       container.innerHTML = bots.map(b => {
-        // Otomatik CDN profil resmi URL'si
         const tgAvatar = `https://t.me/i/userpic/320/${b.username}.jpg`;
         const fallbackAvatar = `https://api.dicebear.com/7.x/identicon/svg?seed=${b.username}`;
 
@@ -175,7 +199,7 @@
             <div class="card-top">
               <div class="bot-identity">
                 <img src="${tgAvatar}" class="bot-pfp" onerror="this.onerror=null; this.src='${fallbackAvatar}';" alt="${b.name}">
-                <div>
+                <div style="min-width:0;">
                   <div class="bot-title">${b.name || b.username}</div>
                   <div class="bot-username">@${b.username}</div>
                 </div>
