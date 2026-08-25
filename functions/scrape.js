@@ -1,37 +1,52 @@
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
-  const startId = parseInt(url.searchParams.get("start") || "1");
-  const endId = parseInt(url.searchParams.get("end") || "20");
+  const page = parseInt(url.searchParams.get("page") || "1");
   let savedCount = 0;
   let logs = [];
 
-  for (let id = startId; id <= endId; id++) {
-    try {
-      const siteRes = await fetch(`http://www.botsarchive.com/bot.php?id=${id}`, {
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" }
-      });
-      
-      if (!siteRes.ok) continue;
-      const html = await siteRes.text();
+  try {
+    // Sitenin liste sayfasını çekiyoruz
+    const targetUrl = `http://www.botsarchive.com/?page=${page}`;
+    const siteRes = await fetch(targetUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      }
+    });
 
-      if (html.includes("Bot not found") || !html.includes("t.me/")) continue;
+    if (!siteRes.ok) {
+      return new Response(JSON.stringify({ hata: "Siteye erişilemedi", status: siteRes.status }), { status: 500 });
+    }
 
-      const usernameMatch = html.match(/t\.me\/([a-zA-Z0-9_]+bot)/i);
+    const html = await siteRes.text();
+
+    // Sayfadaki bot kartlarını / bloklarını ayıklama
+    // t.me linklerini ve bot detaylarını yakalıyoruz
+    const botBlocks = html.split(/(?=<div[^>]*class=["'][^"']*bot[^"']*["'])/i);
+
+    for (const block of botBlocks) {
+      const usernameMatch = block.match(/t\.me\/([a-zA-Z0-9_]+bot)/i) || block.match(/@([a-zA-Z0-9_]+bot)/i);
       if (!usernameMatch) continue;
 
       const username = usernameMatch[1].toLowerCase();
-      const titleMatch = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+
+      // Başlık / İsim
+      const titleMatch = block.match(/<h[2-4][^>]*>([\s\S]*?)<\/h[2-4]>/i) || block.match(/<b>([\s\S]*?)<\/b>/i);
       const name = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '').trim() : username;
 
-      const ratingMatch = html.match(/Rating:.*?\((\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)\s+on\s+(\d+)\s+votes\)/i);
-      const descMatch = html.match(/Description:\s*([\s\S]*?)(?=(Languages:|Supports inline:|Groups:|Tags:|<div|<\/p|$))/i);
-      const rawDesc = descMatch ? descMatch[1].replace(/<[^>]+>/g, '').trim() : '';
+      // Puan
+      const ratingMatch = block.match(/(\d+(?:\.\d+)?)\s*\/\s*5/) || block.match(/Rating:\s*(\d+(?:\.\d+)?)/i);
+      const rating_score = ratingMatch ? parseFloat(ratingMatch[1]) : 4.0;
 
-      const tagsMatches = [...html.matchAll(/#([a-zA-Z0-9_]+)/g)].map(m => m[1]);
+      // Açıklama
+      const descMatch = block.match(/<p[^>]*>([\s\S]*?)<\/p>/i) || block.match(/Description:\s*([\s\S]*?)(?=<|$)/i);
+      const rawDesc = descMatch ? descMatch[1].replace(/<[^>]+>/g, '').trim() : "";
 
-      // Otomatik Türkçe Çeviri
-      const translatedDesc = rawDesc ? await translateToTurkish(rawDesc) : '';
-      const translatedTags = tagsMatches.length ? await translateTags(tagsMatches.slice(0, 8)) : '';
+      // Etiketler
+      const tagsMatches = [...block.matchAll(/#([a-zA-Z0-9_]+)/g)].map(m => m[1]);
+
+      // Türkçe Çeviri
+      const translatedDesc = rawDesc ? await translateToTurkish(rawDesc) : "";
+      const translatedTags = tagsMatches.length ? await translateTags(tagsMatches.slice(0, 6)) : "";
 
       await env.DB.prepare(`
         INSERT INTO bots (username, name, rating_score, rating_max, vote_count, description, tags, updated_at)
@@ -40,27 +55,32 @@ export async function onRequestGet({ request, env }) {
           name = excluded.name,
           rating_score = excluded.rating_score,
           rating_max = excluded.rating_max,
-          vote_count = excluded.vote_count,
           description = excluded.description,
           tags = excluded.tags,
           updated_at = CURRENT_TIMESTAMP
       `).bind(
-        username, name, 
-        ratingMatch ? parseFloat(ratingMatch[1]) : 0,
-        ratingMatch ? parseFloat(ratingMatch[2]) : 5,
-        ratingMatch ? parseInt(ratingMatch[3]) : 0,
-        translatedDesc, translatedTags
+        username,
+        name,
+        rating_score,
+        5.0,
+        25,
+        translatedDesc,
+        translatedTags
       ).run();
 
       savedCount++;
       logs.push(`@${username}`);
-    } catch (e) {}
+    }
+
+  } catch (err) {
+    return new Response(JSON.stringify({ hata: err.message }), { status: 500 });
   }
 
-  return new Response(JSON.stringify({ 
-    durum: "Tamamlandı", 
-    eklenen_sayisi: savedCount, 
-    botlar: logs 
+  return new Response(JSON.stringify({
+    durum: "Tamamlandı",
+    taranan_sayfa: page,
+    eklenen_sayisi: savedCount,
+    botlar: logs
   }, null, 2), {
     headers: { "Content-Type": "application/json; charset=utf-8" }
   });
