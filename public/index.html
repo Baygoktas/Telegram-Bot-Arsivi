@@ -7,7 +7,7 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #0b0f19;
@@ -68,36 +68,22 @@
     .btn-load-more:active { transform: scale(0.98); }
 
     /* Welcome screen */
-    #welcomeScreen{position:fixed;inset:0;z-index:9999;overflow:hidden;background:radial-gradient(circle at 50% 18%,rgba(56,189,248,.08),transparent 30%),radial-gradient(circle at 80% 65%,rgba(37,99,235,.07),transparent 34%),#0d1118;display:flex;align-items:center;justify-content:center;padding:18px;transition:opacity .35s ease,visibility .35s ease}
+    #welcomeScreen{position:fixed;inset:0;z-index:9999;overflow:hidden;background:radial-gradient(circle at 50% 45%,rgba(37,99,235,.10),transparent 34%),radial-gradient(circle at 18% 28%,rgba(56,189,248,.045),transparent 28%),#070b14;display:flex;align-items:center;justify-content:center;padding:18px;transition:opacity .35s ease,visibility .35s ease}
     #welcomeScreen.hidden{opacity:0;visibility:hidden;pointer-events:none}
-    .welcome-scene{position:relative;width:min(520px,100%);height:min(720px,94vh);display:flex;align-items:center;justify-content:center}
-    .welcome-grid{position:absolute;inset:2% -20% 14%;opacity:.10;background-image:linear-gradient(rgba(148,163,184,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.08) 1px,transparent 1px);background-size:42px 42px;mask-image:radial-gradient(circle,#000 0%,transparent 72%);-webkit-mask-image:radial-gradient(circle,#000 0%,transparent 72%)}
-    .welcome-hero{position:absolute;z-index:6;top:2%;left:50%;transform:translateX(-50%);width:min(430px,92%);text-align:center}
-    .welcome-hero-panel{height:190px;border:1px solid rgba(148,163,184,.12);border-radius:28px;background:linear-gradient(145deg,rgba(31,41,55,.78),rgba(15,23,42,.72));box-shadow:0 22px 60px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.04);overflow:hidden;position:relative}
-    .welcome-hero-panel:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 35%,rgba(56,189,248,.12),transparent 45%)}
-    .hero-orb{position:absolute;border-radius:50%;border:1px solid rgba(96,165,250,.12);box-shadow:0 0 40px rgba(37,99,235,.08)}
-    .hero-orb.one{width:210px;height:210px;left:-70px;top:-75px}.hero-orb.two{width:160px;height:160px;right:-45px;bottom:-70px}
-    .hero-mini-card{position:absolute;z-index:2;display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:13px;background:rgba(15,23,42,.82);border:1px solid rgba(148,163,184,.14);color:#dbeafe;font-size:11px;font-weight:700;box-shadow:0 10px 25px rgba(0,0,0,.2)}
-    .hero-mini-card.left{left:16px;top:22px}.hero-mini-card.right{right:16px;top:54px}.hero-mini-card.bottom{left:50%;transform:translateX(-50%);bottom:16px}
-    .hero-mini-dot{width:8px;height:8px;border-radius:50%;background:#38bdf8;box-shadow:0 0 12px rgba(56,189,248,.6)}
-    .welcome-orbit{position:absolute;top:25%;width:86%;aspect-ratio:1;border:1px solid rgba(96,165,250,.09);border-radius:50%;box-shadow:0 0 70px rgba(37,99,235,.05)}
-    .welcome-orbit.orbit-2{width:68%;transform:rotate(42deg);border-color:rgba(56,189,248,.06)}
-    .welcome-core{position:absolute;z-index:5;left:50%;top:52%;transform:translate(-50%,-50%);width:132px;height:132px;border-radius:50%;display:grid;place-items:center;background:rgba(15,23,42,.94);border:1px solid rgba(147,197,253,.28);box-shadow:0 0 0 10px rgba(37,99,235,.025),0 18px 55px rgba(0,0,0,.42),0 0 70px rgba(37,99,235,.13);animation:coreFloat 4.8s ease-in-out infinite}
+    .welcome-scene{position:relative;width:min(520px,100%);height:min(700px,92vh);display:flex;align-items:center;justify-content:center}
+    .welcome-grid{position:absolute;inset:5% -20% 8%;opacity:.16;background-image:linear-gradient(rgba(96,165,250,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(96,165,250,.07) 1px,transparent 1px);background-size:42px 42px;mask-image:radial-gradient(circle,#000 0%,transparent 72%);-webkit-mask-image:radial-gradient(circle,#000 0%,transparent 72%)}
+    .welcome-orbit{position:absolute;width:86%;aspect-ratio:1;border:1px solid rgba(96,165,250,.10);border-radius:50%;box-shadow:0 0 70px rgba(37,99,235,.06);}
+    .welcome-orbit.orbit-2{width:68%;transform:rotate(42deg);border-color:rgba(56,189,248,.07)}
+    .welcome-core{position:absolute;z-index:5;left:50%;top:47%;transform:translate(-50%,-50%);width:132px;height:132px;border-radius:50%;display:grid;place-items:center;background:rgba(15,23,42,.94);border:1px solid rgba(147,197,253,.28);box-shadow:0 0 0 10px rgba(37,99,235,.025),0 18px 55px rgba(0,0,0,.42),0 0 70px rgba(37,99,235,.13);animation:coreFloat 4.8s ease-in-out infinite}
     .welcome-logo{width:92px;height:92px;border-radius:50%;object-fit:cover;border:2px solid rgba(56,189,248,.55);filter:drop-shadow(0 7px 18px rgba(37,99,235,.26));background:#0f172a}
-    .welcome-bot{position:absolute;z-index:4;width:48px;height:48px;border-radius:50%;object-fit:cover;background:#111827;border:2px solid rgba(148,163,184,.20);box-shadow:0 10px 26px rgba(0,0,0,.32);animation:botFloat 5.5s ease-in-out infinite}
+    .welcome-bot{position:absolute;z-index:4;width:54px;height:54px;border-radius:50%;object-fit:cover;background:#111827;border:2px solid rgba(148,163,184,.20);box-shadow:0 10px 26px rgba(0,0,0,.32);animation:botFloat 5.5s ease-in-out infinite}
     .welcome-bot:nth-of-type(2n){animation-duration:6.7s}.welcome-bot:nth-of-type(3n){animation-duration:4.9s}.welcome-bot:nth-of-type(4n){animation-duration:7.2s}
-    .welcome-bot.bot-large{width:56px;height:56px}
-    .welcome-copy{position:absolute;z-index:7;top:57%;left:58%;text-align:left;pointer-events:none}
-    .welcome-bubble{position:relative;display:inline-block;padding:10px 16px;border:1px solid rgba(148,163,184,.16);border-radius:18px;background:rgba(15,23,42,.88);backdrop-filter:blur(12px);color:#f8fafc;font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;white-space:nowrap;box-shadow:0 12px 35px rgba(0,0,0,.22)}
-    .welcome-bubble::after{content:"";position:absolute;left:18px;bottom:-7px;width:12px;height:12px;background:rgba(15,23,42,.88);border-right:1px solid rgba(148,163,184,.16);border-bottom:1px solid rgba(148,163,184,.16);transform:rotate(45deg)}
-    .welcome-content{position:absolute;z-index:7;left:50%;bottom:14%;transform:translateX(-50%);width:min(430px,90%);text-align:center}
-    .welcome-title{font-family:'Outfit',sans-serif;font-size:30px;line-height:1.05;font-weight:800;color:#f8fafc;letter-spacing:-.6px;margin-bottom:10px}
-    .welcome-subtitle{font-size:13px;line-height:1.55;color:#8f99a9;max-width:330px;margin:0 auto}
-    .welcome-dots{display:flex;justify-content:center;gap:6px;margin-top:18px}
-    .welcome-dot{width:7px;height:7px;border-radius:50%;background:#374151}.welcome-dot.active{width:19px;border-radius:10px;background:#f8fafc}
-    .welcome-actions{position:absolute;z-index:8;bottom:3%;left:50%;transform:translateX(-50%);width:min(430px,90%)}
-    .welcome-start{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:0;border-radius:16px;padding:16px 20px;background:#f8fafc;color:#111827;font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 12px 35px rgba(0,0,0,.22)}
-    .welcome-start .telegram-start-icon{color:#111827}
+    .welcome-bot.bot-large{width:62px;height:62px}
+    .welcome-copy{position:absolute;z-index:7;top:68%;left:50%;transform:translateX(-50%);width:min(92%,390px);text-align:center;pointer-events:none}
+    .welcome-bubble{display:none;position:relative;display:inline-block;padding:10px 16px;border:1px solid rgba(148,163,184,.16);border-radius:18px;background:rgba(15,23,42,.86);backdrop-filter:blur(12px);color:#f8fafc;font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;white-space:nowrap;box-shadow:0 12px 35px rgba(0,0,0,.22)}
+    .welcome-bubble::after{content:"";position:absolute;left:18px;bottom:-7px;width:12px;height:12px;background:rgba(15,23,42,.86);border-right:1px solid rgba(148,163,184,.16);border-bottom:1px solid rgba(148,163,184,.16);transform:rotate(45deg)}
+    .welcome-category-panel{position:absolute;z-index:6;top:3%;left:50%;transform:translateX(-50%);width:min(94%,470px);height:172px;border:1px solid rgba(148,163,184,.14);border-radius:28px;background:linear-gradient(145deg,rgba(20,30,47,.96),rgba(10,18,31,.92));backdrop-filter:blur(16px);box-shadow:0 24px 65px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.045);overflow:hidden}.welcome-category-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:18px}.welcome-category{height:56px;border:1px solid rgba(148,163,184,.12);border-radius:16px;background:rgba(15,23,42,.58);display:flex;align-items:center;justify-content:center;gap:6px;color:#dbeafe;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;white-space:nowrap}.welcome-category .dot{width:7px;height:7px;border-radius:50%;background:#38bdf8;box-shadow:0 0 12px rgba(56,189,248,.65)}.welcome-title{font-family:'Space Grotesk',sans-serif;font-size:34px;line-height:1.05;font-weight:700;letter-spacing:-1.5px;color:#f8fafc}.welcome-subtitle{margin-top:10px;font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.5;color:#9aa9bd}.welcome-actions{position:absolute;z-index:8;bottom:4.5%;left:50%;transform:translateX(-50%);width:min(360px,82%)}
+    .welcome-start{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:17px 20px;background:#f8fafc;color:#172033;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 18px 38px rgba(0,0,0,.28)}
     @keyframes coreFloat{0%,100%{margin-top:0}50%{margin-top:-6px}}
     @keyframes botFloat{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(3px,-6px,0)}}
 
@@ -140,9 +126,7 @@
     .feature-badge { font-size: 11px; padding: 4px 8px; border-radius: 8px; background: rgba(255,255,255,0.06); color: var(--text-muted); font-weight: 500; }
     
     .card-footer { display: flex; gap: 8px; margin-top: 4px; }
-    .btn-open { flex: 1; background: var(--accent-gradient); color: #ffffff; text-align: center; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 14px; text-decoration: none; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25); }
-    .btn-open .telegram-start-icon{width:18px;height:18px;flex:0 0 18px}
-    .btn-open .telegram-start-icon svg{width:18px;height:18px;fill:currentColor;display:block}
+    .btn-open { flex: 1; background: var(--accent-gradient); color: #ffffff; text-align: center; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 14px; text-decoration: none; display: block; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25); }
 
     .bot-modal {
       position: fixed; inset: 0; z-index: 1000; display: none; align-items: flex-end; justify-content: center;
@@ -198,25 +182,11 @@
   <div id="welcomeScreen">
     <div class="welcome-scene">
       <div class="welcome-grid"></div>
-      <div class="welcome-hero">
-        <div class="welcome-hero-panel">
-          <div class="hero-orb one"></div><div class="hero-orb two"></div>
-          <div class="hero-mini-card left"><span class="hero-mini-dot"></span> Yapay Zeka</div>
-          <div class="hero-mini-card right"><span class="hero-mini-dot"></span> Finans</div>
-          <div class="hero-mini-card bottom"><span class="hero-mini-dot"></span> Telegram Botları</div>
-        </div>
-      </div>
       <div class="welcome-orbit"></div>
       <div class="welcome-orbit orbit-2"></div>
-      <div class="welcome-copy"><div class="welcome-bubble">Başlayalım mı?</div></div>
-      <div id="welcomeBots"></div>
+      <div class="welcome-category-panel"><div class="welcome-category-grid"><div class="welcome-category"><span class="dot"></span>Yapay Zeka</div><div class="welcome-category"><span class="dot"></span>Finans</div><div class="welcome-category"><span class="dot"></span>İndiriciler</div><div class="welcome-category"><span class="dot"></span>Müzik & Ses</div><div class="welcome-category"><span class="dot"></span>Araçlar</div><div class="welcome-category"><span class="dot"></span>Kripto</div><div class="welcome-category"><span class="dot"></span>Oyun</div><div class="welcome-category"><span class="dot"></span>Telegram</div></div></div><div class="welcome-copy"><div class="welcome-title">Bot Arşivi'ne<br>Hoş Geldiniz</div><div class="welcome-subtitle">Telegram'ın en kullanışlı botlarını tek yerde keşfedin, inceleyin ve saniyeler içinde başlatın.</div></div><div id="welcomeBots"></div>
       <div class="welcome-core">
         <img class="welcome-logo" src="https://t.me/i/userpic/320/Botarsivibot.jpg" onerror="this.onerror=null;this.src='https://api.dicebear.com/9.x/bottts/svg?seed=BotArsivi&backgroundColor=0284c7';" alt="@botarsivibot">
-      </div>
-      <div class="welcome-content">
-        <div class="welcome-title">Bot Arşivi'ne hoş geldiniz</div>
-        <div class="welcome-subtitle">Telegram'ın en kullanışlı botlarını tek yerde keşfedin, inceleyin ve saniyeler içinde başlatın.</div>
-        <div class="welcome-dots"><span class="welcome-dot active"></span><span class="welcome-dot"></span><span class="welcome-dot"></span><span class="welcome-dot"></span><span class="welcome-dot"></span></div>
       </div>
       <div class="welcome-actions">
         <button class="welcome-start" id="welcomeStart">
@@ -295,10 +265,10 @@
         attempts++;
         const angle = Math.random() * Math.PI * 2;
         // Halkayı çok genişletmeden hafifçe değiştir.
-        const radius = 25 + Math.random() * 18;
+        const radius = 30 + Math.random() * 15;
         const x = 50 + Math.cos(angle) * radius * 1.18;
         const y = 47 + Math.sin(angle) * radius * 1.18;
-        if (x < 8 || x > 92 || y < 10 || y > 82) continue;
+        if (x < 7 || x > 93 || y < 20 || y > 83) continue;
         if (Math.hypot(x - 50, y - 47) < 21) continue;
         if (points.some(([px, py]) => Math.hypot(x - px, y - py) < minDistance)) continue;
         points.push([Number(x.toFixed(2)), Number(y.toFixed(2))]);
@@ -306,7 +276,7 @@
       return points;
     }
 
-    const welcomePositions = makeWelcomePositions(14);
+    
 
     const welcomeFallbackImages = [
       'https://t.me/i/userpic/320/botfather.jpg',
@@ -335,6 +305,7 @@
 
     function pickWelcomeBots(list) {
       const clean = list.filter(b => b && b.username && (b.avatar_url || b.username));
+      const blocked = /porn|adult|nsfw|xxx|sex|dating|onlyfans|casino|gambl|bet|escort|nude|18\+|18plus|vpn|hack|cheat|warez/i;
       const groups = {
         download: ['indir', 'download', 'video', 'youtube', 'media', 'mp3', 'mp4', 'converter', 'downloader'],
         ai: ['ai', 'yapay', 'zeka', 'chatgpt', 'gpt', 'claude', 'gemini', 'assistant'],
@@ -342,11 +313,12 @@
       };
       const chosen = [];
       const used = new Set();
+      const safe = clean.filter(b => !blocked.test(welcomeBotText(b)));
       for (const key of Object.keys(groups)) {
-        const pool = clean.filter(b => !used.has(String(b.username).toLowerCase()) && groups[key].some(k => welcomeBotText(b).includes(k)));
+        const pool = safe.filter(b => !used.has(String(b.username).toLowerCase()) && groups[key].some(k => welcomeBotText(b).includes(k)));
         pool.slice(0, 5).forEach(b => { used.add(String(b.username).toLowerCase()); chosen.push(b); });
       }
-      clean.forEach(b => {
+      safe.forEach(b => {
         if (chosen.length >= 18) return;
         const u = String(b.username).toLowerCase();
         if (used.has(u)) return;
@@ -360,7 +332,7 @@
 
     function renderWelcomeBots(botList) {
       const holder = document.getElementById('welcomeBots');
-      const selected = pickWelcomeBots(botList).slice(0, 14);
+      const selected = pickWelcomeBots(botList).slice(0, 18);
       const positions = makeWelcomePositions(selected.length);
       const items = [];
 
@@ -496,7 +468,7 @@
               ${tags}
             </div>
             <div class="card-footer" onclick="event.stopPropagation()">
-              <a href="https://t.me/${username}?start=botarsivi" class="btn-open" target="_blank"><span class="telegram-start-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21.2 4.6 18 19.8c-.24 1.08-.88 1.34-1.78.84l-4.92-3.63-2.37 2.28c-.26.26-.48.48-.98.48l.35-5 9.1-8.22c.4-.35-.09-.55-.62-.2L5.52 13.02.7 11.51c-1.05-.33-1.07-1.05.22-1.53L19.74 2.5c.88-.32 1.65.2 1.46 2.1Z"/></svg></span><span>Botu Başlat</span></a>
+              <a href="https://t.me/${username}?start=botarsivi" class="btn-open" target="_blank">Botu Başlat</a>
             </div>
           </div>
         `;
