@@ -192,7 +192,7 @@
           renderTags(bots);
         }
 
-        renderBots(bots);
+        renderBots(bots.slice(0, 100));
       } catch(e) {
         document.getElementById('botList').innerHTML = '<div style="text-align:center;">Veriler yüklenemedi.</div>';
       }
