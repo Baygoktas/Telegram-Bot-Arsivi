@@ -74,14 +74,15 @@
     .welcome-grid{position:absolute;inset:5% -20% 8%;opacity:.16;background-image:linear-gradient(rgba(96,165,250,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(96,165,250,.07) 1px,transparent 1px);background-size:42px 42px;mask-image:radial-gradient(circle,#000 0%,transparent 72%);-webkit-mask-image:radial-gradient(circle,#000 0%,transparent 72%)}
     .welcome-orbit{position:absolute;width:86%;aspect-ratio:1;border:1px solid rgba(96,165,250,.10);border-radius:50%;box-shadow:0 0 70px rgba(37,99,235,.06);}
     .welcome-orbit.orbit-2{width:68%;transform:rotate(42deg);border-color:rgba(56,189,248,.07)}
-    .welcome-core{position:absolute;z-index:5;left:50%;top:47%;transform:translate(-50%,-50%);width:132px;height:132px;border-radius:50%;display:grid;place-items:center;background:rgba(15,23,42,.94);border:1px solid rgba(147,197,253,.28);box-shadow:0 0 0 10px rgba(37,99,235,.025),0 18px 55px rgba(0,0,0,.42),0 0 70px rgba(37,99,235,.13);animation:coreFloat 4.8s ease-in-out infinite}
-    .welcome-logo{width:92px;height:92px;border-radius:50%;object-fit:cover;border:2px solid rgba(56,189,248,.55);filter:drop-shadow(0 7px 18px rgba(37,99,235,.26));background:#0f172a}
+    .welcome-core{position:absolute;z-index:5;left:50%;top:48%;transform:translate(-50%,-50%);width:156px;height:156px;border-radius:50%;display:grid;place-items:center;background:rgba(15,23,42,.94);border:1px solid rgba(147,197,253,.28);box-shadow:0 0 0 10px rgba(37,99,235,.025),0 18px 55px rgba(0,0,0,.42),0 0 70px rgba(37,99,235,.13);animation:coreFloat 4.8s ease-in-out infinite}
+    .welcome-logo{width:112px;height:112px;border-radius:50%;object-fit:cover;border:2px solid rgba(56,189,248,.55);filter:drop-shadow(0 7px 18px rgba(37,99,235,.26));background:#0f172a}
     .welcome-bot{position:absolute;z-index:4;width:54px;height:54px;border-radius:50%;object-fit:cover;background:#111827;border:2px solid rgba(148,163,184,.20);box-shadow:0 10px 26px rgba(0,0,0,.32);animation:botFloat 5.5s ease-in-out infinite}
     .welcome-bot:nth-of-type(2n){animation-duration:6.7s}.welcome-bot:nth-of-type(3n){animation-duration:4.9s}.welcome-bot:nth-of-type(4n){animation-duration:7.2s}
     .welcome-bot.bot-large{width:62px;height:62px}
     .welcome-copy{position:absolute;z-index:7;top:68%;left:50%;transform:translateX(-50%);width:min(92%,390px);text-align:center;pointer-events:none}
     .welcome-bubble{display:none;position:relative;display:inline-block;padding:10px 16px;border:1px solid rgba(148,163,184,.16);border-radius:18px;background:rgba(15,23,42,.86);backdrop-filter:blur(12px);color:#f8fafc;font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;white-space:nowrap;box-shadow:0 12px 35px rgba(0,0,0,.22)}
     .welcome-bubble::after{content:"";position:absolute;left:18px;bottom:-7px;width:12px;height:12px;background:rgba(15,23,42,.86);border-right:1px solid rgba(148,163,184,.16);border-bottom:1px solid rgba(148,163,184,.16);transform:rotate(45deg)}
+    .welcome-copyright{position:absolute;z-index:9;top:0.8%;left:50%;transform:translateX(-50%);text-align:center;color:rgba(148,163,184,.42);font-family:'DM Sans',sans-serif;font-size:9px;font-weight:500;line-height:1.45;letter-spacing:.15px;white-space:nowrap;pointer-events:none}
     .welcome-category-panel{position:absolute;z-index:6;top:3%;left:50%;transform:translateX(-50%);width:min(94%,470px);height:172px;border:1px solid rgba(148,163,184,.14);border-radius:28px;background:linear-gradient(145deg,rgba(20,30,47,.96),rgba(10,18,31,.92));backdrop-filter:blur(16px);box-shadow:0 24px 65px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.045);overflow:hidden}.welcome-category-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:18px}.welcome-category{height:56px;border:1px solid rgba(148,163,184,.12);border-radius:16px;background:rgba(15,23,42,.58);display:flex;align-items:center;justify-content:center;gap:6px;color:#dbeafe;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;white-space:nowrap}.welcome-category .dot{width:7px;height:7px;border-radius:50%;background:#38bdf8;box-shadow:0 0 12px rgba(56,189,248,.65)}.welcome-title{font-family:'Space Grotesk',sans-serif;font-size:34px;line-height:1.05;font-weight:700;letter-spacing:-1.5px;color:#f8fafc}.welcome-subtitle{margin-top:10px;font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.5;color:#9aa9bd}.welcome-actions{position:absolute;z-index:8;bottom:4.5%;left:50%;transform:translateX(-50%);width:min(360px,82%)}
     .welcome-start{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:17px 20px;background:#f8fafc;color:#172033;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 18px 38px rgba(0,0,0,.28)}
     @keyframes coreFloat{0%,100%{margin-top:0}50%{margin-top:-6px}}
@@ -184,7 +185,8 @@
       <div class="welcome-grid"></div>
       <div class="welcome-orbit"></div>
       <div class="welcome-orbit orbit-2"></div>
-      <div class="welcome-category-panel"><div class="welcome-category-grid"><div class="welcome-category"><span class="dot"></span>Yapay Zeka</div><div class="welcome-category"><span class="dot"></span>Finans</div><div class="welcome-category"><span class="dot"></span>İndiriciler</div><div class="welcome-category"><span class="dot"></span>Müzik & Ses</div><div class="welcome-category"><span class="dot"></span>Araçlar</div><div class="welcome-category"><span class="dot"></span>Kripto</div><div class="welcome-category"><span class="dot"></span>Oyun</div><div class="welcome-category"><span class="dot"></span>Telegram</div></div></div><div class="welcome-copy"><div class="welcome-title">Bot Arşivi'ne<br>Hoş Geldiniz</div><div class="welcome-subtitle">Telegram'ın en kullanışlı botlarını tek yerde keşfedin, inceleyin ve saniyeler içinde başlatın.</div></div><div id="welcomeBots"></div>
+      <div class="welcome-copyright">© 2026 Baygoktas<br>Hakları saklıdır.</div>
+      <div class="welcome-category-panel"><div class="welcome-category-grid"><div class="welcome-category"><span class="dot"></span>Yapay Zeka</div><div class="welcome-category"><span class="dot"></span>Finans</div><div class="welcome-category"><span class="dot"></span>İndiriciler</div><div class="welcome-category"><span class="dot"></span>Müzik & Ses</div><div class="welcome-category"><span class="dot"></span>Araçlar</div><div class="welcome-category"><span class="dot"></span>Kripto</div><div class="welcome-category"><span class="dot"></span>Oyun</div><div class="welcome-category"><span class="dot"></span>Telegram</div></div></div><div class="welcome-copy"><div class="welcome-title">Bot Arşivi'ne<br>Hoş Geldiniz</div><div class="welcome-subtitle">Telegram'ın en kullanışlı botlarını tek yerde keşfedin, inceleyin ve saniyeler içinde başlatın.</div></div>
       <div class="welcome-core">
         <img class="welcome-logo" src="https://t.me/i/userpic/320/Botarsivibot.jpg" onerror="this.onerror=null;this.src='https://api.dicebear.com/9.x/bottts/svg?seed=BotArsivi&backgroundColor=0284c7';" alt="@botarsivibot">
       </div>
@@ -298,70 +300,6 @@
       'https://t.me/i/userpic/320/gif.gif',
       'https://t.me/i/userpic/320/transcriber_bot.jpg'
     ];
-
-    function welcomeBotText(bot) {
-      return `${bot.name || ''} ${bot.username || ''} ${bot.niche || ''} ${bot.tags || ''} ${bot.description || ''}`.toLowerCase();
-    }
-
-    function pickWelcomeBots(list) {
-      const clean = list.filter(b => b && b.username && (b.avatar_url || b.username));
-      const blocked = /porn|adult|nsfw|xxx|sex|dating|onlyfans|casino|gambl|bet|escort|nude|18\+|18plus|vpn|hack|cheat|warez/i;
-      const groups = {
-        download: ['indir', 'download', 'video', 'youtube', 'media', 'mp3', 'mp4', 'converter', 'downloader'],
-        ai: ['ai', 'yapay', 'zeka', 'chatgpt', 'gpt', 'claude', 'gemini', 'assistant'],
-        finance: ['finans', 'finance', 'kripto', 'crypto', 'wallet', 'cüzdan', 'coin', 'token', 'ton', 'bitcoin', 'ethereum', 'trading', 'borsa']
-      };
-      const chosen = [];
-      const used = new Set();
-      const safe = clean.filter(b => !blocked.test(welcomeBotText(b)));
-      for (const key of Object.keys(groups)) {
-        const pool = safe.filter(b => !used.has(String(b.username).toLowerCase()) && groups[key].some(k => welcomeBotText(b).includes(k)));
-        pool.slice(0, 5).forEach(b => { used.add(String(b.username).toLowerCase()); chosen.push(b); });
-      }
-      safe.forEach(b => {
-        if (chosen.length >= 18) return;
-        const u = String(b.username).toLowerCase();
-        if (used.has(u)) return;
-        const txt = welcomeBotText(b);
-        if (/gambl|bet|dating|adult|casino|nsfw|vpn|hack/.test(txt)) return;
-        used.add(u);
-        chosen.push(b);
-      });
-      return chosen.slice(0, 18);
-    }
-
-    function renderWelcomeBots(botList) {
-      const holder = document.getElementById('welcomeBots');
-      const selected = pickWelcomeBots(botList).slice(0, 18);
-      const positions = makeWelcomePositions(selected.length);
-      const items = [];
-
-      selected.forEach((b, i) => {
-        const [x, y] = positions[i];
-        const username = String(b.username || `bot-${i + 1}`);
-        const avatar = b.avatar_url || `https://t.me/i/userpic/320/${encodeURIComponent(username)}.jpg`;
-        const telegramAvatar = `https://t.me/i/userpic/320/${encodeURIComponent(username)}.jpg`;
-        const fallback = `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(username)}&backgroundColor=0f172a`;
-        const size = i % 5 === 0 ? ' bot-large' : '';
-        items.push(`<img class="welcome-bot${size}" style="left:${x}%;top:${y}%;" src="${escapeHtml(avatar)}" data-telegram="${escapeHtml(telegramAvatar)}" data-fallback="${escapeHtml(fallback)}" alt="@${escapeHtml(username)}" onerror="if(this.dataset.telegram && this.src!==this.dataset.telegram){this.src=this.dataset.telegram;}else if(this.dataset.fallback && this.src!==this.dataset.fallback){this.src=this.dataset.fallback;}else{this.removeAttribute('onerror');}">`);
-      });
-
-      holder.innerHTML = items.join('');
-    }
-
-    async function loadWelcomeBots() {
-      try {
-        const res = await fetch('/api/bots?search=&tag=');
-        if (!res.ok) throw new Error(`API ${res.status}`);
-        const response = await res.json();
-        const data = Array.isArray(response) ? response : (Array.isArray(response?.bots) ? response.bots : []);
-        renderWelcomeBots(data);
-      } catch (e) {
-        console.warn('Karşılama botları alınamadı:', e);
-        renderWelcomeBots([]);
-      }
-    }
-    loadWelcomeBots();
 
     async function fetchBots(search = "", tag = "") {
       try {
