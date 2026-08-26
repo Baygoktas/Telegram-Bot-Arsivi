@@ -68,22 +68,36 @@
     .btn-load-more:active { transform: scale(0.98); }
 
     /* Welcome screen */
-    #welcomeScreen{position:fixed;inset:0;z-index:9999;overflow:hidden;background:radial-gradient(circle at 50% 45%,rgba(37,99,235,.10),transparent 34%),radial-gradient(circle at 18% 28%,rgba(56,189,248,.045),transparent 28%),#070b14;display:flex;align-items:center;justify-content:center;padding:18px;transition:opacity .35s ease,visibility .35s ease}
+    #welcomeScreen{position:fixed;inset:0;z-index:9999;overflow:hidden;background:radial-gradient(circle at 50% 18%,rgba(56,189,248,.08),transparent 30%),radial-gradient(circle at 80% 65%,rgba(37,99,235,.07),transparent 34%),#0d1118;display:flex;align-items:center;justify-content:center;padding:18px;transition:opacity .35s ease,visibility .35s ease}
     #welcomeScreen.hidden{opacity:0;visibility:hidden;pointer-events:none}
-    .welcome-scene{position:relative;width:min(520px,100%);height:min(700px,92vh);display:flex;align-items:center;justify-content:center}
-    .welcome-grid{position:absolute;inset:5% -20% 8%;opacity:.16;background-image:linear-gradient(rgba(96,165,250,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(96,165,250,.07) 1px,transparent 1px);background-size:42px 42px;mask-image:radial-gradient(circle,#000 0%,transparent 72%);-webkit-mask-image:radial-gradient(circle,#000 0%,transparent 72%)}
-    .welcome-orbit{position:absolute;width:86%;aspect-ratio:1;border:1px solid rgba(96,165,250,.10);border-radius:50%;box-shadow:0 0 70px rgba(37,99,235,.06);}
-    .welcome-orbit.orbit-2{width:68%;transform:rotate(42deg);border-color:rgba(56,189,248,.07)}
-    .welcome-core{position:absolute;z-index:5;left:50%;top:47%;transform:translate(-50%,-50%);width:132px;height:132px;border-radius:50%;display:grid;place-items:center;background:rgba(15,23,42,.94);border:1px solid rgba(147,197,253,.28);box-shadow:0 0 0 10px rgba(37,99,235,.025),0 18px 55px rgba(0,0,0,.42),0 0 70px rgba(37,99,235,.13);animation:coreFloat 4.8s ease-in-out infinite}
+    .welcome-scene{position:relative;width:min(520px,100%);height:min(720px,94vh);display:flex;align-items:center;justify-content:center}
+    .welcome-grid{position:absolute;inset:2% -20% 14%;opacity:.10;background-image:linear-gradient(rgba(148,163,184,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.08) 1px,transparent 1px);background-size:42px 42px;mask-image:radial-gradient(circle,#000 0%,transparent 72%);-webkit-mask-image:radial-gradient(circle,#000 0%,transparent 72%)}
+    .welcome-hero{position:absolute;z-index:6;top:2%;left:50%;transform:translateX(-50%);width:min(430px,92%);text-align:center}
+    .welcome-hero-panel{height:190px;border:1px solid rgba(148,163,184,.12);border-radius:28px;background:linear-gradient(145deg,rgba(31,41,55,.78),rgba(15,23,42,.72));box-shadow:0 22px 60px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.04);overflow:hidden;position:relative}
+    .welcome-hero-panel:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 35%,rgba(56,189,248,.12),transparent 45%)}
+    .hero-orb{position:absolute;border-radius:50%;border:1px solid rgba(96,165,250,.12);box-shadow:0 0 40px rgba(37,99,235,.08)}
+    .hero-orb.one{width:210px;height:210px;left:-70px;top:-75px}.hero-orb.two{width:160px;height:160px;right:-45px;bottom:-70px}
+    .hero-mini-card{position:absolute;z-index:2;display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:13px;background:rgba(15,23,42,.82);border:1px solid rgba(148,163,184,.14);color:#dbeafe;font-size:11px;font-weight:700;box-shadow:0 10px 25px rgba(0,0,0,.2)}
+    .hero-mini-card.left{left:16px;top:22px}.hero-mini-card.right{right:16px;top:54px}.hero-mini-card.bottom{left:50%;transform:translateX(-50%);bottom:16px}
+    .hero-mini-dot{width:8px;height:8px;border-radius:50%;background:#38bdf8;box-shadow:0 0 12px rgba(56,189,248,.6)}
+    .welcome-orbit{position:absolute;top:25%;width:86%;aspect-ratio:1;border:1px solid rgba(96,165,250,.09);border-radius:50%;box-shadow:0 0 70px rgba(37,99,235,.05)}
+    .welcome-orbit.orbit-2{width:68%;transform:rotate(42deg);border-color:rgba(56,189,248,.06)}
+    .welcome-core{position:absolute;z-index:5;left:50%;top:52%;transform:translate(-50%,-50%);width:132px;height:132px;border-radius:50%;display:grid;place-items:center;background:rgba(15,23,42,.94);border:1px solid rgba(147,197,253,.28);box-shadow:0 0 0 10px rgba(37,99,235,.025),0 18px 55px rgba(0,0,0,.42),0 0 70px rgba(37,99,235,.13);animation:coreFloat 4.8s ease-in-out infinite}
     .welcome-logo{width:92px;height:92px;border-radius:50%;object-fit:cover;border:2px solid rgba(56,189,248,.55);filter:drop-shadow(0 7px 18px rgba(37,99,235,.26));background:#0f172a}
     .welcome-bot{position:absolute;z-index:4;width:48px;height:48px;border-radius:50%;object-fit:cover;background:#111827;border:2px solid rgba(148,163,184,.20);box-shadow:0 10px 26px rgba(0,0,0,.32);animation:botFloat 5.5s ease-in-out infinite}
     .welcome-bot:nth-of-type(2n){animation-duration:6.7s}.welcome-bot:nth-of-type(3n){animation-duration:4.9s}.welcome-bot:nth-of-type(4n){animation-duration:7.2s}
     .welcome-bot.bot-large{width:56px;height:56px}
-    .welcome-copy{position:absolute;z-index:7;top:33%;left:58%;text-align:left;pointer-events:none}
-    .welcome-bubble{position:relative;display:inline-block;padding:10px 16px;border:1px solid rgba(148,163,184,.16);border-radius:18px;background:rgba(15,23,42,.86);backdrop-filter:blur(12px);color:#f8fafc;font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;white-space:nowrap;box-shadow:0 12px 35px rgba(0,0,0,.22)}
-    .welcome-bubble::after{content:"";position:absolute;left:18px;bottom:-7px;width:12px;height:12px;background:rgba(15,23,42,.86);border-right:1px solid rgba(148,163,184,.16);border-bottom:1px solid rgba(148,163,184,.16);transform:rotate(45deg)}
-    .welcome-actions{position:absolute;z-index:8;bottom:5%;left:50%;transform:translateX(-50%);width:min(270px,78%)}
-    .welcome-start{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:1px solid rgba(147,197,253,.18);border-radius:15px;padding:14px 20px;background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 10px 30px rgba(37,99,235,.24)}
+    .welcome-copy{position:absolute;z-index:7;top:57%;left:58%;text-align:left;pointer-events:none}
+    .welcome-bubble{position:relative;display:inline-block;padding:10px 16px;border:1px solid rgba(148,163,184,.16);border-radius:18px;background:rgba(15,23,42,.88);backdrop-filter:blur(12px);color:#f8fafc;font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;white-space:nowrap;box-shadow:0 12px 35px rgba(0,0,0,.22)}
+    .welcome-bubble::after{content:"";position:absolute;left:18px;bottom:-7px;width:12px;height:12px;background:rgba(15,23,42,.88);border-right:1px solid rgba(148,163,184,.16);border-bottom:1px solid rgba(148,163,184,.16);transform:rotate(45deg)}
+    .welcome-content{position:absolute;z-index:7;left:50%;bottom:14%;transform:translateX(-50%);width:min(430px,90%);text-align:center}
+    .welcome-title{font-family:'Outfit',sans-serif;font-size:30px;line-height:1.05;font-weight:800;color:#f8fafc;letter-spacing:-.6px;margin-bottom:10px}
+    .welcome-subtitle{font-size:13px;line-height:1.55;color:#8f99a9;max-width:330px;margin:0 auto}
+    .welcome-dots{display:flex;justify-content:center;gap:6px;margin-top:18px}
+    .welcome-dot{width:7px;height:7px;border-radius:50%;background:#374151}.welcome-dot.active{width:19px;border-radius:10px;background:#f8fafc}
+    .welcome-actions{position:absolute;z-index:8;bottom:3%;left:50%;transform:translateX(-50%);width:min(430px,90%)}
+    .welcome-start{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:0;border-radius:16px;padding:16px 20px;background:#f8fafc;color:#111827;font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 12px 35px rgba(0,0,0,.22)}
+    .welcome-start .telegram-start-icon{color:#111827}
     @keyframes coreFloat{0%,100%{margin-top:0}50%{margin-top:-6px}}
     @keyframes botFloat{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(3px,-6px,0)}}
 
@@ -126,7 +140,9 @@
     .feature-badge { font-size: 11px; padding: 4px 8px; border-radius: 8px; background: rgba(255,255,255,0.06); color: var(--text-muted); font-weight: 500; }
     
     .card-footer { display: flex; gap: 8px; margin-top: 4px; }
-    .btn-open { flex: 1; background: var(--accent-gradient); color: #ffffff; text-align: center; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 14px; text-decoration: none; display: block; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25); }
+    .btn-open { flex: 1; background: var(--accent-gradient); color: #ffffff; text-align: center; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 14px; text-decoration: none; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25); }
+    .btn-open .telegram-start-icon{width:18px;height:18px;flex:0 0 18px}
+    .btn-open .telegram-start-icon svg{width:18px;height:18px;fill:currentColor;display:block}
 
     .bot-modal {
       position: fixed; inset: 0; z-index: 1000; display: none; align-items: flex-end; justify-content: center;
@@ -182,12 +198,25 @@
   <div id="welcomeScreen">
     <div class="welcome-scene">
       <div class="welcome-grid"></div>
+      <div class="welcome-hero">
+        <div class="welcome-hero-panel">
+          <div class="hero-orb one"></div><div class="hero-orb two"></div>
+          <div class="hero-mini-card left"><span class="hero-mini-dot"></span> Yapay Zeka</div>
+          <div class="hero-mini-card right"><span class="hero-mini-dot"></span> Finans</div>
+          <div class="hero-mini-card bottom"><span class="hero-mini-dot"></span> Telegram Botları</div>
+        </div>
+      </div>
       <div class="welcome-orbit"></div>
       <div class="welcome-orbit orbit-2"></div>
       <div class="welcome-copy"><div class="welcome-bubble">Başlayalım mı?</div></div>
       <div id="welcomeBots"></div>
       <div class="welcome-core">
         <img class="welcome-logo" src="https://t.me/i/userpic/320/Botarsivibot.jpg" onerror="this.onerror=null;this.src='https://api.dicebear.com/9.x/bottts/svg?seed=BotArsivi&backgroundColor=0284c7';" alt="@botarsivibot">
+      </div>
+      <div class="welcome-content">
+        <div class="welcome-title">Bot Arşivi'ne hoş geldiniz</div>
+        <div class="welcome-subtitle">Telegram'ın en kullanışlı botlarını tek yerde keşfedin, inceleyin ve saniyeler içinde başlatın.</div>
+        <div class="welcome-dots"><span class="welcome-dot active"></span><span class="welcome-dot"></span><span class="welcome-dot"></span><span class="welcome-dot"></span><span class="welcome-dot"></span></div>
       </div>
       <div class="welcome-actions">
         <button class="welcome-start" id="welcomeStart">
@@ -467,7 +496,7 @@
               ${tags}
             </div>
             <div class="card-footer" onclick="event.stopPropagation()">
-              <a href="https://t.me/${username}?start=botarsivi" class="btn-open" target="_blank">Botu Başlat</a>
+              <a href="https://t.me/${username}?start=botarsivi" class="btn-open" target="_blank"><span class="telegram-start-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21.2 4.6 18 19.8c-.24 1.08-.88 1.34-1.78.84l-4.92-3.63-2.37 2.28c-.26.26-.48.48-.98.48l.35-5 9.1-8.22c.4-.35-.09-.55-.62-.2L5.52 13.02.7 11.51c-1.05-.33-1.07-1.05.22-1.53L19.74 2.5c.88-.32 1.65.2 1.46 2.1Z"/></svg></span><span>Botu Başlat</span></a>
             </div>
           </div>
         `;
