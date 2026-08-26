@@ -188,8 +188,7 @@
           : Number(response.total ?? bots.length);
 
         if (!search && !tag && !activeCategory) {
-          document.getElementById('botCountText').innerText =
-            `${total.toLocaleString('tr-TR')} Bot Aktif`;
+        
           renderTags(bots);
         }
 
