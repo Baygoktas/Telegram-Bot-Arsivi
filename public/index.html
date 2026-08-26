@@ -66,6 +66,26 @@
     .load-more-wrap { text-align: center; margin: 18px 0 8px; }
     .btn-load-more { border: 1px solid rgba(56, 189, 248, 0.25); background: rgba(56, 189, 248, 0.10); color: #7dd3fc; padding: 12px 24px; border-radius: 12px; font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
     .btn-load-more:active { transform: scale(0.98); }
+
+    /* Welcome screen */
+    #welcomeScreen{position:fixed;inset:0;z-index:9999;overflow:hidden;background:radial-gradient(circle at 50% 42%,rgba(37,99,235,.16),transparent 34%),radial-gradient(circle at 15% 20%,rgba(56,189,248,.07),transparent 26%),#070b14;display:flex;align-items:center;justify-content:center;padding:24px;transition:opacity .35s ease,visibility .35s ease}
+    #welcomeScreen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+    .welcome-scene{position:relative;width:min(520px,100%);height:min(700px,92vh);display:flex;align-items:center;justify-content:center}
+    .welcome-grid{position:absolute;inset:5% -20% 8%;opacity:.24;background-image:linear-gradient(rgba(96,165,250,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(96,165,250,.08) 1px,transparent 1px);background-size:42px 42px;mask-image:radial-gradient(circle,#000 0%,transparent 72%);-webkit-mask-image:radial-gradient(circle,#000 0%,transparent 72%)}
+    .welcome-orbit{position:absolute;width:84%;aspect-ratio:1;border:1px solid rgba(96,165,250,.13);border-radius:50%;box-shadow:0 0 70px rgba(37,99,235,.08)}
+    .welcome-orbit.orbit-2{width:64%;transform:rotate(42deg);border-color:rgba(56,189,248,.09)}
+    .welcome-core{position:relative;z-index:4;width:132px;height:132px;border-radius:50%;display:grid;place-items:center;background:rgba(15,23,42,.92);border:1px solid rgba(147,197,253,.25);box-shadow:0 0 0 10px rgba(37,99,235,.035),0 18px 55px rgba(0,0,0,.42),0 0 70px rgba(37,99,235,.12);animation:coreFloat 4.8s ease-in-out infinite}
+    .welcome-logo{width:76px;height:76px;object-fit:contain;filter:drop-shadow(0 7px 18px rgba(37,99,235,.22))}
+    .welcome-bot{position:absolute;z-index:3;width:48px;height:48px;border-radius:50%;object-fit:cover;background:#111827;border:2px solid rgba(148,163,184,.20);box-shadow:0 10px 26px rgba(0,0,0,.32);animation:botFloat 5.5s ease-in-out infinite}
+    .welcome-bot:nth-of-type(2n){animation-duration:6.7s}.welcome-bot:nth-of-type(3n){animation-duration:4.9s}.welcome-bot:nth-of-type(4n){animation-duration:7.2s}
+    .bot-1{top:10%;left:26%}.bot-2{top:18%;right:18%;width:40px;height:40px}.bot-3{top:36%;left:5%;width:42px;height:42px}.bot-4{top:35%;right:4%;width:54px;height:54px}.bot-5{bottom:30%;left:10%;width:38px;height:38px}.bot-6{bottom:18%;right:14%;width:46px;height:46px}.bot-7{bottom:10%;left:31%;width:43px;height:43px}.bot-8{top:51%;right:17%;width:34px;height:34px}
+    .welcome-copy{position:absolute;z-index:7;top:7%;left:50%;transform:translateX(-50%);text-align:center;width:92%;pointer-events:none}
+    .welcome-bubble{display:inline-block;padding:10px 17px;border:1px solid rgba(148,163,184,.16);border-radius:18px;background:rgba(15,23,42,.82);backdrop-filter:blur(12px);color:#f8fafc;font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;box-shadow:0 12px 35px rgba(0,0,0,.22)}
+    .welcome-actions{position:absolute;z-index:8;bottom:6%;left:50%;transform:translateX(-50%);width:min(250px,75%)}
+    .welcome-start{width:100%;border:1px solid rgba(147,197,253,.18);border-radius:15px;padding:14px 20px;background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 10px 30px rgba(37,99,235,.24)}
+    @keyframes coreFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+    @keyframes botFloat{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(3px,-6px,0)}}
+
     .bot-card {
       position: relative;
       background: var(--card-bg); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 10px;
@@ -143,6 +163,27 @@
   </style>
 </head>
 <body>
+  <div id="welcomeScreen">
+    <div class="welcome-scene">
+      <div class="welcome-grid"></div>
+      <div class="welcome-orbit"></div>
+      <div class="welcome-orbit orbit-2"></div>
+      <div class="welcome-copy"><div class="welcome-bubble">Başlayalım mı?</div></div>
+      <img class="welcome-bot bot-1" src="https://t.me/i/userpic/320/botfather.jpg" alt="">
+      <img class="welcome-bot bot-2" src="https://t.me/i/userpic/320/missrose_bot.jpg" alt="">
+      <img class="welcome-bot bot-3" src="https://t.me/i/userpic/320/hamster_kombat_bot.jpg" alt="">
+      <img class="welcome-bot bot-4" src="https://t.me/i/userpic/320/toncoin_bot.jpg" alt="">
+      <img class="welcome-bot bot-5" src="https://t.me/i/userpic/320/downloader_bot.jpg" alt="">
+      <img class="welcome-bot bot-6" src="https://t.me/i/userpic/320/rose.jpg" alt="">
+      <img class="welcome-bot bot-7" src="https://t.me/i/userpic/320/bot.jpg" alt="">
+      <img class="welcome-bot bot-8" src="https://t.me/i/userpic/320/telegram.jpg" alt="">
+      <div class="welcome-core">
+        <img class="welcome-logo" src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram">
+      </div>
+      <div class="welcome-actions"><button class="welcome-start" id="welcomeStart">Başla</button></div>
+    </div>
+  </div>
+
 
   <div class="app-header-center">
     <div class="main-avatar-wrap">
@@ -193,6 +234,14 @@
     let allBots = [];
     let visibleCount = 100;
     const PAGE_SIZE = 100;
+
+
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const welcomeStart = document.getElementById('welcomeStart');
+    welcomeStart.addEventListener('click', () => welcomeScreen.classList.add('hidden'));
+    document.querySelectorAll('.welcome-bot').forEach(img => {
+      img.addEventListener('error', () => { img.style.opacity = '0'; }, {once:true});
+    });
 
     async function fetchBots(search = "", tag = "") {
       try {
