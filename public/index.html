@@ -37,22 +37,6 @@
     }
     .app-header-center p { font-size: 12.5px; color: var(--text-muted); font-weight: 500; max-width: 290px; line-height: 1.4; margin-bottom: 10px; }
 
-    .live-counter-badge {
-      position: absolute; top: 2px; right: 0;
-      display: inline-flex; align-items: center; gap: 5px;
-      background: rgba(34, 197, 94, 0.10);
-      border: 1px solid rgba(34, 197, 94, 0.22);
-      padding: 4px 8px; border-radius: 14px;
-      font-size: 10px; font-weight: 600; color: #4ade80;
-      white-space: nowrap;
-    }
-    .live-dot { width: 8px; height: 8px; background-color: #22c55e; border-radius: 50%; box-shadow: 0 0 8px #22c55e; animation: pulse 1.8s infinite; }
-    @keyframes pulse {
-      0% { transform: scale(0.95); opacity: 0.7; }
-      50% { transform: scale(1.25); opacity: 1; }
-      100% { transform: scale(0.95); opacity: 0.7; }
-    }
-
     .search-box { position: sticky; top: 0; background: var(--bg); padding: 8px 0 10px 0; z-index: 10; }
     .search-wrapper { position: relative; width: 100%; }
     .search-wrapper input {
@@ -129,10 +113,7 @@
     </div>
     <h1>Bot Arşivi</h1>
     <p>Telegram'ın en kullanışlı botlarını keşfet, filtrele ve anında başlat</p>
-    <div class="live-counter-badge">
-      <span class="live-dot"></span>
-      <span id="botCountText">Botlar Yükleniyor...</span>
-    </div>
+
   </div>
 
   <div class="search-box">
@@ -168,17 +149,22 @@
       try {
         const queryTag = tag || activeCategory;
         const res = await fetch(`/api/bots?search=${encodeURIComponent(search)}&tag=${encodeURIComponent(queryTag)}`);
-        const data = await res.json();
-        
+        const response = await res.json();
+
+        // API hem eski formatta [] hem de yeni formatta { bots: [], total: ... } dönebilir.
+        const bots = Array.isArray(response)
+          ? response
+          : (Array.isArray(response?.bots) ? response.bots : []);
+
         if (!search && !tag && !activeCategory) {
-          // Bu sayı /api/bots endpoint'inin döndürdüğü kayıt sayısıdır.
-          // D1'deki gerçek toplamın 460 olması için API'nin toplam sayıyı ayrıca döndürmesi gerekir.
-          document.getElementById('botCountText').innerText = `${data.length} Bot Aktif`;
-          renderTags(data);
+          renderTags(bots);
         }
-        renderBots(data);
+
+        // Ana ekranda ilk 100 bot gösterilir.
+        renderBots(bots.slice(0, 100));
       } catch(e) {
-        document.getElementById('botList').innerHTML = '<div style="text-align:center;">Veriler yüklenemedi.</div>';
+        console.error('Bot verileri alınamadı:', e);
+        document.getElementById('botList').innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:30px;">Veriler yüklenemedi.</div>';
       }
     }
 
