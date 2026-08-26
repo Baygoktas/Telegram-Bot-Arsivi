@@ -63,6 +63,9 @@
     .tag-chip.active { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border-color: rgba(56, 189, 248, 0.3); font-weight: 600; }
 
     .bot-list { display: flex; flex-direction: column; gap: 14px; }
+    .load-more-wrap { text-align: center; margin: 18px 0 8px; }
+    .btn-load-more { border: 1px solid rgba(56, 189, 248, 0.25); background: rgba(56, 189, 248, 0.10); color: #7dd3fc; padding: 12px 24px; border-radius: 12px; font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .btn-load-more:active { transform: scale(0.98); }
     .bot-card {
       position: relative;
       background: var(--card-bg); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 10px;
@@ -138,34 +141,62 @@
   <div class="bot-list" id="botList">
     <div style="text-align: center; color: var(--text-muted); padding: 25px;">Yükleniyor...</div>
   </div>
+  <div class="load-more-wrap" id="loadMoreWrap" style="display:none;"></div>
 
   <script>
     const tg = window.Telegram?.WebApp;
     if (tg) { tg.expand(); tg.ready(); }
     let activeTag = "";
     let activeCategory = "";
+    let allBots = [];
+    let visibleCount = 100;
+    const PAGE_SIZE = 100;
 
     async function fetchBots(search = "", tag = "") {
       try {
         const queryTag = tag || activeCategory;
         const res = await fetch(`/api/bots?search=${encodeURIComponent(search)}&tag=${encodeURIComponent(queryTag)}`);
+        if (!res.ok) throw new Error(`API ${res.status}`);
         const response = await res.json();
 
         // API hem eski formatta [] hem de yeni formatta { bots: [], total: ... } dönebilir.
-        const bots = Array.isArray(response)
+        allBots = Array.isArray(response)
           ? response
           : (Array.isArray(response?.bots) ? response.bots : []);
 
+        visibleCount = PAGE_SIZE;
+
         if (!search && !tag && !activeCategory) {
-          renderTags(bots);
+          renderTags(allBots);
         }
 
-        // Ana ekranda ilk 100 bot gösterilir.
-        renderBots(bots.slice(0, 100));
+        renderBots(allBots.slice(0, visibleCount));
+        renderLoadMore();
       } catch(e) {
         console.error('Bot verileri alınamadı:', e);
         document.getElementById('botList').innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:30px;">Veriler yüklenemedi.</div>';
+        document.getElementById('loadMoreWrap').style.display = 'none';
       }
+    }
+
+    function renderLoadMore() {
+      const wrap = document.getElementById('loadMoreWrap');
+      if (visibleCount >= allBots.length) {
+        wrap.innerHTML = '';
+        wrap.style.display = 'none';
+        return;
+      }
+
+      const remaining = allBots.length - visibleCount;
+      const nextCount = Math.min(PAGE_SIZE, remaining);
+      wrap.style.display = 'block';
+      wrap.innerHTML = `<button class="btn-load-more" onclick="loadMoreBots()">Daha Fazla Bot <span style="opacity:.7;">(+${nextCount})</span></button>`;
+    }
+
+    function loadMoreBots() {
+      visibleCount = Math.min(visibleCount + PAGE_SIZE, allBots.length);
+      renderBots(allBots.slice(0, visibleCount));
+      renderLoadMore();
     }
 
     function renderTags(botData) {
@@ -215,7 +246,6 @@
             <div class="card-footer">
               <a href="https://t.me/${b.username}?start=botarsivi" class="btn-open" target="_blank">Botu Başlat</a>
             </div>
-</div>
           </div>
         `;
       }).join('');
