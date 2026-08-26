@@ -106,6 +106,40 @@
     
     .card-footer { display: flex; gap: 8px; margin-top: 4px; }
     .btn-open { flex: 1; background: var(--accent-gradient); color: #ffffff; text-align: center; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 14px; text-decoration: none; display: block; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25); }
+
+    .bot-modal {
+      position: fixed; inset: 0; z-index: 1000; display: none; align-items: flex-end; justify-content: center;
+      background: rgba(0,0,0,.72); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+      padding: 12px;
+    }
+    .bot-modal.show { display: flex; }
+    .bot-modal-card {
+      width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto;
+      background: #121a2b; border: 1px solid rgba(255,255,255,.10); border-radius: 24px 24px 18px 18px;
+      box-shadow: 0 -10px 45px rgba(0,0,0,.45); padding: 20px; position: relative;
+      animation: modalUp .22s ease-out;
+    }
+    @keyframes modalUp { from { transform: translateY(25px); opacity: .5; } to { transform: translateY(0); opacity: 1; } }
+    .modal-close {
+      position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.07); color: #fff;
+      font-size: 22px; line-height: 1; cursor: pointer;
+    }
+    .modal-head { display: flex; align-items: center; gap: 14px; padding-right: 42px; }
+    .modal-avatar { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(56,189,248,.45); background: #1e293b; flex-shrink: 0; }
+    .modal-title { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; color: #fff; line-height: 1.15; }
+    .modal-username { margin-top: 4px; color: #38bdf8; font-size: 13px; }
+    .modal-desc { margin-top: 18px; color: #d7deea; font-size: 14px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .modal-section-title { margin-top: 18px; margin-bottom: 9px; color: #94a3b8; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+    .modal-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .modal-info { background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.06); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+    .modal-info-label { color: #7f8da3; font-size: 10px; }
+    .modal-info-value { color: #f8fafc; font-size: 13px; font-weight: 600; margin-top: 3px; overflow-wrap: anywhere; }
+    .modal-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .modal-tag { background: rgba(56,189,248,.09); border: 1px solid rgba(56,189,248,.16); color: #9ddcff; padding: 5px 9px; border-radius: 10px; font-size: 11px; }
+    .modal-start { display: block; width: 100%; margin-top: 18px; background: var(--accent-gradient); color: #fff; text-align: center; padding: 13px; border-radius: 13px; font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700; text-decoration: none; }
+    .bot-card { cursor: pointer; }
+    .card-footer, .badges-row { cursor: default; }
   </style>
 </head>
 <body>
@@ -142,6 +176,14 @@
     <div style="text-align: center; color: var(--text-muted); padding: 25px;">Yükleniyor...</div>
   </div>
   <div class="load-more-wrap" id="loadMoreWrap" style="display:none;"></div>
+
+
+  <div class="bot-modal" id="botModal" onclick="closeBotDetail(event)">
+    <div class="bot-modal-card" onclick="event.stopPropagation()">
+      <button class="modal-close" type="button" onclick="closeBotDetail()" aria-label="Kapat">×</button>
+      <div id="botModalContent"></div>
+    </div>
+  </div>
 
   <script>
     const tg = window.Telegram?.WebApp;
@@ -214,6 +256,15 @@
       container.innerHTML = html;
     }
 
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     function renderBots(botList) {
       const container = document.getElementById('botList');
       if (!botList.length) {
@@ -221,35 +272,97 @@
         return;
       }
       container.innerHTML = botList.map((b, index) => {
-        const tgAvatar = `https://t.me/i/userpic/320/${b.username}.jpg`;
-        const fallbackAvatar = `https://api.dicebear.com/7.x/identicon/svg?seed=${b.username}`;
+        const tgAvatar = `https://t.me/i/userpic/320/${encodeURIComponent(b.username)}.jpg`;
+        const fallbackAvatar = `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(b.username)}`;
         const rank = index + 1;
+        const username = escapeHtml(b.username);
+        const name = escapeHtml(b.name || b.username);
+        const description = escapeHtml(b.description || 'Açıklama bulunmuyor.');
+        const tags = b.tags ? b.tags.split(' ').slice(0, 3).map(t => `<span class="feature-badge">${escapeHtml(t)}</span>`).join('') : '';
 
         return `
-          <div class="bot-card" id="card-${b.username}">
+          <div class="bot-card" id="card-${username}" onclick="openBotDetail('${username}')">
             <div class="bot-rank">${rank}</div>
             <div class="card-top">
               <div class="bot-identity">
-                <img src="${tgAvatar}" class="bot-pfp" onerror="this.onerror=null; this.src='${fallbackAvatar}';" alt="${b.name}">
+                <img src="${tgAvatar}" class="bot-pfp" onerror="this.onerror=null; this.src='${fallbackAvatar}';" alt="${name}">
                 <div style="min-width:0;">
-                  <div class="bot-title">${b.name || b.username}</div>
-                  <div class="bot-username">@${b.username}</div>
+                  <div class="bot-title">${name}</div>
+                  <div class="bot-username">@${username}</div>
                 </div>
               </div>
             </div>
-            <div class="bot-desc" onclick="this.classList.toggle('expanded')">${b.description || 'Açıklama bulunmuyor.'}</div>
+            <div class="bot-desc">${description}</div>
             <div class="badges-row">
               ${b.supports_inline ? '<span class="feature-badge">⚡ Satır İçi</span>' : ''}
               ${b.supports_groups ? '<span class="feature-badge">👥 Grup</span>' : ''}
-              ${b.tags ? b.tags.split(' ').slice(0, 3).map(t => `<span class="feature-badge">${t}</span>`).join('') : ''}
+              ${tags}
             </div>
-            <div class="card-footer">
-              <a href="https://t.me/${b.username}?start=botarsivi" class="btn-open" target="_blank">Botu Başlat</a>
+            <div class="card-footer" onclick="event.stopPropagation()">
+              <a href="https://t.me/${username}?start=botarsivi" class="btn-open" target="_blank">Botu Başlat</a>
             </div>
           </div>
         `;
       }).join('');
     }
+
+    function openBotDetail(username) {
+      const bot = allBots.find(b => String(b.username).toLowerCase() === String(username).toLowerCase());
+      if (!bot) return;
+
+      const modal = document.getElementById('botModal');
+      const content = document.getElementById('botModalContent');
+      const avatar = bot.avatar_url || `https://t.me/i/userpic/320/${encodeURIComponent(bot.username)}.jpg`;
+      const fallback = `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(bot.username)}`;
+      const tags = bot.tags ? bot.tags.split(' ').filter(Boolean).slice(0, 12) : [];
+      if (bot.niche && !tags.length) tags.push(`#${bot.niche}`);
+
+      const info = [
+        ['Kategori', bot.niche || 'Belirtilmemiş'],
+        ['Stars', bot.stars ?? '—'],
+        ['Stars seviyesi', bot.stars_level ?? '—'],
+        ['Aylık kullanıcı', bot.mau ?? '—'],
+        ['Popülerlik sırası', bot.popular_rank ?? '—'],
+        ['Büyüme', bot.growth_pct == null ? '—' : `${bot.growth_pct}%`]
+      ];
+
+      content.innerHTML = `
+        <div class="modal-head">
+          <img class="modal-avatar" src="${escapeHtml(avatar)}" onerror="this.onerror=null;this.src='${fallback}';" alt="${escapeHtml(bot.name || bot.username)}">
+          <div style="min-width:0;">
+            <div class="modal-title">${escapeHtml(bot.name || bot.username)}</div>
+            <div class="modal-username">@${escapeHtml(bot.username)}</div>
+          </div>
+        </div>
+        <div class="modal-desc">${escapeHtml(bot.description || 'Açıklama bulunmuyor.')}</div>
+        <div class="modal-section-title">Bot bilgileri</div>
+        <div class="modal-info-grid">
+          ${info.map(([label, value]) => `
+            <div class="modal-info">
+              <div class="modal-info-label">${escapeHtml(label)}</div>
+              <div class="modal-info-value">${escapeHtml(value)}</div>
+            </div>`).join('')}
+        </div>
+        ${tags.length ? `
+          <div class="modal-section-title">Etiketler</div>
+          <div class="modal-tags">${tags.map(t => `<span class="modal-tag">${escapeHtml(t)}</span>`).join('')}</div>
+        ` : ''}
+        <a class="modal-start" href="https://t.me/${encodeURIComponent(bot.username)}?start=botarsivi" target="_blank">Botu Başlat →</a>
+      `;
+
+      modal.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeBotDetail(event) {
+      if (event && event.target && event.target.id !== 'botModal') return;
+      document.getElementById('botModal').classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeBotDetail();
+    });
 
     function setCategory(cat, el) {
       document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
