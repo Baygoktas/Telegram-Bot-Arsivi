@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Bot Arşivi</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #131b2e;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-gradient: linear-gradient(135deg, #38bdf8 0%, #2563eb 100%);
+      --rating-bg: rgba(250, 204, 21, 0.12);
+      --rating-color: #facc15;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 14px; padding-bottom: 35px; }
+
+    .app-header-center {
+      position: relative;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 8px 0 16px 0;
+    }
+    .main-avatar-wrap { position: relative; margin-bottom: 10px; }
+    .main-avatar {
+      width: 74px; height: 74px; border-radius: 50%; object-fit: cover;
+      border: 3px solid #38bdf8; box-shadow: 0 0 25px rgba(56, 189, 248, 0.35); background: #1e293b; display: block;
+    }
+    .app-header-center h1 {
+      font-family: 'Outfit', sans-serif; font-size: 25px; font-weight: 800;
+      background: linear-gradient(135deg, #ffffff 40%, #93c5fd 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 4px;
+    }
+    .app-header-center p { font-size: 12.5px; color: var(--text-muted); font-weight: 500; max-width: 290px; line-height: 1.4; margin-bottom: 10px; }
+
+    .live-counter-badge {
+      position: absolute; top: 2px; right: 0;
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(34, 197, 94, 0.10);
+      border: 1px solid rgba(34, 197, 94, 0.22);
+      padding: 4px 8px; border-radius: 14px;
+      font-size: 10px; font-weight: 600; color: #4ade80;
+      white-space: nowrap;
+    }
+    .live-dot { width: 8px; height: 8px; background-color: #22c55e; border-radius: 50%; box-shadow: 0 0 8px #22c55e; animation: pulse 1.8s infinite; }
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.7; }
+      50% { transform: scale(1.25); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.7; }
+    }
+
+    .search-box { position: sticky; top: 0; background: var(--bg); padding: 8px 0 10px 0; z-index: 10; }
+    .search-wrapper { position: relative; width: 100%; }
+    .search-wrapper input {
+      width: 100%; padding: 12px 16px 12px 42px; border-radius: 14px; border: 1px solid var(--card-border);
+      background: var(--card-bg); color: var(--text); font-size: 14px; outline: none; transition: 0.2s;
+    }
+    .search-wrapper input:focus { border-color: var(--accent); }
+    .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); opacity: 0.5; font-size: 15px; }
+
+    .category-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 6px; scrollbar-width: none; }
+    .category-scroll::-webkit-scrollbar { display: none; }
+    .cat-btn {
+      display: flex; align-items: center; gap: 6px; background: var(--card-bg); border: 1px solid var(--card-border);
+      padding: 8px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; color: #cbd5e1; white-space: nowrap; cursor: pointer; transition: 0.2s;
+    }
+    .cat-btn.active { background: var(--accent-gradient); color: #ffffff; border-color: transparent; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
+
+    .tags-container { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 12px; scrollbar-width: none; }
+    .tags-container::-webkit-scrollbar { display: none; }
+    .tag-chip {
+      background: rgba(255,255,255,0.04); padding: 5px 11px; border-radius: 16px; font-size: 11.5px; font-weight: 500;
+      white-space: nowrap; cursor: pointer; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.03); transition: 0.2s;
+    }
+    .tag-chip.active { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border-color: rgba(56, 189, 248, 0.3); font-weight: 600; }
+
+    .bot-list { display: flex; flex-direction: column; gap: 14px; }
+    .bot-card {
+      position: relative;
+      background: var(--card-bg); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 10px;
+      border: 1px solid var(--card-border); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .bot-rank {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      min-width: 26px;
+      height: 26px;
+      padding: 0 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 9px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      color: #7dd3fc;
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      z-index: 2;
+    }
+
+    .card-top { padding-left: 34px; }
+    .card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .bot-identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .bot-pfp { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.1); background: #1e293b; flex-shrink: 0; }
+
+    .bot-title { font-family: 'Outfit', sans-serif; font-size: 16.5px; font-weight: 700; color: #fff; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bot-username { font-size: 12.5px; color: var(--accent); margin-top: 2px; font-weight: 500; }
+    .rating-badge { background: var(--rating-bg); color: var(--rating-color); padding: 5px 9px; border-radius: 10px; font-size: 12.5px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+    .bot-desc { font-size: 13.5px; color: #cbd5e1; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .bot-desc.expanded { -webkit-line-clamp: unset; }
+    .badges-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+    .feature-badge { font-size: 11px; padding: 4px 8px; border-radius: 8px; background: rgba(255,255,255,0.06); color: var(--text-muted); font-weight: 500; }
+    
+    .card-footer { display: flex; gap: 8px; margin-top: 4px; }
+    .btn-open { flex: 1; background: var(--accent-gradient); color: #ffffff; text-align: center; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 14px; text-decoration: none; display: block; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25); }
+    .btn-rate { background: rgba(255,255,255,0.06); border: 1px solid var(--card-border); color: var(--text); padding: 0 14px; border-radius: 12px; font-weight: 600; font-size: 13px; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+    .btn-rate:hover { background: rgba(255,255,255,0.1); }
+
+    /* Yıldız Oylama Kutusu */
+    .rating-panel { display: none; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 12px; margin-top: 6px; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.05); }
+    .rating-panel.show { display: flex; }
+    .stars-row { display: flex; gap: 6px; font-size: 20px; cursor: pointer; }
+    .star { transition: 0.1s; filter: grayscale(1); }
+    .star:hover, .star.active { filter: grayscale(0); transform: scale(1.15); }
+  </style>
+</head>
+<body>
+
+  <div class="app-header-center">
+    <div class="main-avatar-wrap">
+      <img src="https://t.me/i/userpic/320/Botarsivibot.jpg" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=BotArsivi&backgroundColor=0284c7';" class="main-avatar" alt="Bot Arşivi">
+    </div>
+    <h1>Bot Arşivi</h1>
+    <p>Telegram'ın en kullanışlı botlarını keşfet, filtrele ve anında başlat</p>
+    <div class="live-counter-badge">
+      <span class="live-dot"></span>
+      <span id="botCountText">Botlar Yükleniyor...</span>
+    </div>
+  </div>
+
+  <div class="search-box">
+    <div class="search-wrapper">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Bot adı veya özellik ara...">
+    </div>
+  </div>
+
+  <div class="category-scroll">
+    <div class="cat-btn active" onclick="setCategory('', this)">✨ Tümü</div>
+    <div class="cat-btn" onclick="setCategory('müzik', this)">🎵 Müzik & Ses</div>
+    <div class="cat-btn" onclick="setCategory('ai', this)">🤖 Yapay Zeka</div>
+    <div class="cat-btn" onclick="setCategory('indirici', this)">📥 İndiriciler</div>
+    <div class="cat-btn" onclick="setCategory('araçlar', this)">🛠️ Araçlar & Dosya</div>
+    <div class="cat-btn" onclick="setCategory('oyun', this)">🎮 Oyun & Eğlence</div>
+    <div class="cat-btn" onclick="setCategory('finans', this)">📈 Finans & Kripto</div>
+    <div class="cat-btn" onclick="setCategory('grup', this)">🛡️ Grup Yönetimi</div>
+  </div>
+
+  <div class="tags-container" id="tagsContainer"></div>
+  <div class="bot-list" id="botList">
+    <div style="text-align: center; color: var(--text-muted); padding: 25px;">Yükleniyor...</div>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) { tg.expand(); tg.ready(); }
+    let activeTag = "";
+    let activeCategory = "";
+
+    async function fetchBots(search = "", tag = "") {
+      try {
+        const queryTag = tag || activeCategory;
+        const res = await fetch(`/api/bots?search=${encodeURIComponent(search)}&tag=${encodeURIComponent(queryTag)}`);
+        const data = await res.json();
+        
+        if (!search && !tag && !activeCategory) {
+          // Bu sayı /api/bots endpoint'inin döndürdüğü kayıt sayısıdır.
+          // D1'deki gerçek toplamın 460 olması için API'nin toplam sayıyı ayrıca döndürmesi gerekir.
+          document.getElementById('botCountText').innerText = `${data.length} Bot Aktif`;
+          renderTags(data);
+        }
+        renderBots(data);
+      } catch(e) {
+        document.getElementById('botList').innerHTML = '<div style="text-align:center;">Veriler yüklenemedi.</div>';
+      }
+    }
+
+    function renderTags(botData) {
+      const tagSet = new Set();
+      botData.forEach(b => {
+        if (b.tags) {
+          b.tags.split(' ').forEach(t => { if (t.startsWith('#')) tagSet.add(t.replace('#', '')); });
+        }
+      });
+      const container = document.getElementById('tagsContainer');
+      let html = '';
+      Array.from(tagSet).slice(0, 15).forEach(t => {
+        html += `<div class="tag-chip ${activeTag === t ? "active" : ""}" onclick="filterByTag('${t}')">#${t}</div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    function renderBots(botList) {
+      const container = document.getElementById('botList');
+      if (!botList.length) {
+        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:30px;">Bu kategoride eşleşen bot bulunamadı.</div>';
+        return;
+      }
+      container.innerHTML = botList.map((b, index) => {
+        const tgAvatar = `https://t.me/i/userpic/320/${b.username}.jpg`;
+        const fallbackAvatar = `https://api.dicebear.com/7.x/identicon/svg?seed=${b.username}`;
+        const rank = index + 1;
+
+        return `
+          <div class="bot-card" id="card-${b.username}">
+            <div class="bot-rank">${rank}</div>
+            <div class="card-top">
+              <div class="bot-identity">
+                <img src="${tgAvatar}" class="bot-pfp" onerror="this.onerror=null; this.src='${fallbackAvatar}';" alt="${b.name}">
+                <div style="min-width:0;">
+                  <div class="bot-title">${b.name || b.username}</div>
+                  <div class="bot-username">@${b.username}</div>
+                </div>
+              </div>
+              <div class="rating-badge" id="badge-${b.username}">⭐ ${b.rating_score} <span style="font-size:10px; opacity:0.8;">(${b.vote_count})</span></div>
+            </div>
+            <div class="bot-desc" onclick="this.classList.toggle('expanded')">${b.description || 'Açıklama bulunmuyor.'}</div>
+            <div class="badges-row">
+              ${b.supports_inline ? '<span class="feature-badge">⚡ Satır İçi</span>' : ''}
+              ${b.supports_groups ? '<span class="feature-badge">👥 Grup</span>' : ''}
+              ${b.tags ? b.tags.split(' ').slice(0, 3).map(t => `<span class="feature-badge">${t}</span>`).join('') : ''}
+            </div>
+            <div class="card-footer">
+              <a href="https://t.me/${b.username}?start=botarsivi" class="btn-open" target="_blank">Botu Başlat</a>
+              <button class="btn-rate" onclick="toggleRatePanel('${b.username}')">⭐ Puan Ver</button>
+            </div>
+            <div class="rating-panel" id="panel-${b.username}">
+              <span style="font-size:12px; color:var(--text-muted); font-weight:600;">Puanınız:</span>
+              <div class="stars-row">
+                <span class="star" onclick="submitRating('${b.username}', 1)">⭐</span>
+                <span class="star" onclick="submitRating('${b.username}', 2)">⭐</span>
+                <span class="star" onclick="submitRating('${b.username}', 3)">⭐</span>
+                <span class="star" onclick="submitRating('${b.username}', 4)">⭐</span>
+                <span class="star" onclick="submitRating('${b.username}', 5)">⭐</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleRatePanel(username) {
+      const panel = document.getElementById(`panel-${username}`);
+      panel.classList.toggle('show');
+    }
+
+    async function submitRating(username, score) {
+      try {
+        const res = await fetch('/api/rate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, score })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById(`badge-${username}`).innerHTML = `⭐ ${data.yeni_puan} <span style="font-size:10px; opacity:0.8;">(${data.toplam_oy})</span>`;
+          document.getElementById(`panel-${username}`).innerHTML = `<div style="width:100%; text-align:center; color:#4ade80; font-size:12.5px; font-weight:600;">Teşekkürler! Puanınız kaydedildi. 🎉</div>`;
+          setTimeout(() => {
+            document.getElementById(`panel-${username}`).classList.remove('show');
+          }, 2000);
+        }
+      } catch(e) {
+        alert('Puan gönderilemedi.');
+      }
+    }
+
+    function setCategory(cat, el) {
+      document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
+      el.classList.add('active');
+      activeCategory = cat;
+      activeTag = "";
+      document.querySelectorAll('.tag-chip').forEach(c => c.classList.remove('active'));
+      fetchBots(document.getElementById('searchInput').value, cat);
+    }
+
+    function filterByTag(tag) {
+      activeTag = (activeTag === tag) ? "" : tag;
+      document.querySelectorAll('.tag-chip').forEach(c => { c.classList.toggle('active', c.innerText === `#${tag}`); });
+      fetchBots(document.getElementById('searchInput').value, activeTag || activeCategory);
+    }
+
+    let timeout = null;
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => fetchBots(e.target.value, activeTag || activeCategory), 300);
+    });
+
+    fetchBots();
+  </script>
+</body>
+</html>
