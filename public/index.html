@@ -180,15 +180,24 @@
       try {
         const queryTag = tag || activeCategory;
         const res = await fetch(`/api/bots?search=${encodeURIComponent(search)}&tag=${encodeURIComponent(queryTag)}`);
-        const data = await res.json();
-        
+        const response = await res.json();
+
+        // Yeni API formatı: { bots: [...], total: N }
+        // Eski formatı (doğrudan dizi) da destekliyoruz.
+        const bots = Array.isArray(response)
+          ? response
+          : (Array.isArray(response.bots) ? response.bots : []);
+        const total = Array.isArray(response)
+          ? response.length
+          : Number(response.total ?? bots.length);
+
         if (!search && !tag && !activeCategory) {
-          // Bu sayı /api/bots endpoint'inin döndürdüğü kayıt sayısıdır.
-          // D1'deki gerçek toplamın 460 olması için API'nin toplam sayıyı ayrıca döndürmesi gerekir.
-          document.getElementById('botCountText').innerText = `${data.length} Bot Aktif`;
-          renderTags(data);
+          document.getElementById('botCountText').innerText =
+            `${total.toLocaleString('tr-TR')} Bot Aktif`;
+          renderTags(bots);
         }
-        renderBots(data);
+
+        renderBots(bots);
       } catch(e) {
         document.getElementById('botList').innerHTML = '<div style="text-align:center;">Veriler yüklenemedi.</div>';
       }
